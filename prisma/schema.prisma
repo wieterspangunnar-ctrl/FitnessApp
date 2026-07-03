@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum MemberStatus {
+  ACTIVE
+  PAUSED
+  TERMINATED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED_LATE
+  CANCELLED_TIMELY
+  NO_SHOW
+}
+
+enum PersonalTrainingStatus {
+  AVAILABLE
+  BOOKED
+  COMPLETED
+  CANCELLED_BY_TRAINER
+}
+
+enum BillingStatus {
+  PENDING
+  BILLED_TO_ACCOUNT
+  PAID
+}
+
+model Member {
+  id              String                    @id @default(uuid())
+  firstName       String                    @map("first_name")
+  lastName        String                    @map("last_name")
+  email           String                    @unique
+  sepaIban        String                    @map("sepa_iban")
+  status          MemberStatus              @default(ACTIVE)
+  membershipTierId String                   @map("membership_tier_id")
+  contractEndDate DateTime                  @map("contract_end_date")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  membershipTier  MembershipTier            @relation(fields: [membershipTierId], references: [id])
+  bookings        Booking[]
+  waitlistEntries Waitlist[]
+  personalTrainingBookings PersonalTrainingBooking[]
+
+  @@map("members")
+}
+
+model MembershipTier {
+  id                       String   @id @default(uuid())
+  name                     String   @unique
+  monthlyPrice             Decimal  @map("monthly_price")
+  maxCoursesPerMonth       Int?     @map("max_courses_per_month")
+  hasVideoAccess           Boolean  @default(false) @map("has_video_access")
+  bookingWindowDays        Int      @map("booking_window_days")
+  hasFreeLateCancellation  Boolean  @default(false) @map("has_free_late_cancellation")
+  includedPtSlotsPerMonth  Int      @default(0) @map("included_pt_slots_per_month")
+  members                  Member[]
+
+  @@map("membership_tiers")
+}
+
+model Course {
+  id              String        @id @default(uuid())
+  courseTypeId    String        @map("course_type_id")
+  startTime       DateTime      @map("start_time")
+  endTime         DateTime      @map("end_time")
+  maxParticipants Int           @map("max_participants")
+  roomId          String        @map("room_id")
+  trainerId       String        @map("trainer_id")
+  courseType      CourseType    @relation(fields: [courseTypeId], references: [id])
+  room            Room          @relation(fields: [roomId], references: [id])
+  trainer         Trainer       @relation(fields: [trainerId], references: [id])
+  bookings        Booking[]
+  waitlistEntries Waitlist[]
+
+  @@index([startTime])
+  @@map("courses")
+}
+
+model CourseType {
+  id            String                 @id @default(uuid())
+  name          String                 @unique
+  courses       Course[]
+  qualifications TrainerQualification[]
+
+  @@map("course_types")
+}
+
+model Trainer {
+  id                       String                    @id @default(uuid())
+  firstName                String                    @map("first_name")
+  lastName                 String                    @map("last_name")
+  email                    String                    @unique
+  hourlyPtRate             Decimal                   @map("hourly_pt_rate")
+  qualifications           TrainerQualification[]
+  courses                  Course[]
+  personalTrainingBookings PersonalTrainingBooking[]
+
+  @@map("trainers")
+}
+
+model TrainerQualification {
+  id           String     @id @default(uuid())
+  trainerId    String     @map("trainer_id")
+  courseTypeId String     @map("course_type_id")
+  trainer      Trainer    @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  courseType   CourseType @relation(fields: [courseTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([trainerId, courseTypeId])
+  @@map("trainer_qualifications")
+}
+
+model Room {
+  id      String   @id @default(uuid())
+  name    String   @unique
+  courses Course[]
+
+  @@map("rooms")
+}
+
+model Booking {
+  id       String        @id @default(uuid())
+  memberId String        @map("member_id")
+  courseId String        @map("course_id")
+  status   BookingStatus @default(CONFIRMED)
+  bookedAt DateTime      @default(now()) @map("booked_at")
+  member   Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  course   Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, courseId])
+  @@index([courseId, status])
+  @@index([memberId, bookedAt])
+  @@map("bookings")
+}
+
+model Waitlist {
+  id        String   @id @default(uuid())
+  memberId  String   @map("member_id")
+  courseId  String   @map("course_id")
+  position  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([memberId, courseId])
+  @@unique([courseId, position])
+  @@index([courseId, createdAt])
+  @@map("waitlists")
+}
+
+model PersonalTrainingBooking {
+  id                String                 @id @default(uuid())
+  trainerId         String                 @map("trainer_id")
+  memberId          String?                @map("member_id")
+  startTime         DateTime               @map("start_time")
+  endTime           DateTime               @map("end_time")
+  status            PersonalTrainingStatus @default(AVAILABLE)
+  isFreePremiumSlot Boolean                @default(false) @map("is_free_premium_slot")
+  billingStatus     BillingStatus          @default(PENDING) @map("billing_status")
+  trainer           Trainer                @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  member            Member?                @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@index([trainerId, startTime])
+  @@index([memberId, startTime])
+  @@map("personal_training_bookings")
+}
+
+model Video {
+  id        String   @id @default(uuid())
+  title     String
+  videoUrl  String   @map("video_url")
+  category  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([category])
+  @@map("videos")
+}
