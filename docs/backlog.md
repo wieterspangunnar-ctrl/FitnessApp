@@ -34,7 +34,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-005 | Admin-Kontrollzentrum-Grundlayout | 1 | validated | docs/spec.md §1 | Zentrale Navigation fuer Lisa |
 | FZ-006 | Member-Dashboard-Grundlayout | 1 | validated | docs/spec.md §1 | Profil, Buchungen, Kurse, PT, Videos erreichbar |
 | FZ-007 | Relationales Datenmodell initialisieren | 1 | done | docs/spec.md §2 | Initiales Prisma-Schema mit UUID Primary Keys und Foreign Keys |
-| FZ-008 | `Member`-Entitaet modellieren | 1 | validated | docs/spec.md §2.1 | Name, E-Mail unique, SEPA, Status, Tarif, Vertragsende |
+| FZ-008 | `Member`-Entitaet modellieren | 1 | done | docs/spec.md §2.1 | Implementiert: Mitgliederverwaltung mit Prisma-Modell, API-Routen und Admin-UI fuer Anlegen/Bearbeiten/Loeschen; dokumentiert in `docs/decisions.md` |
 | FZ-009 | `MembershipTier`-Entitaet modellieren | 1 | validated | docs/spec.md §2.1 | Preis, Limits, Video, Buchungsfenster, Storno, PT |
 | FZ-010 | `Trainer`-Entitaet modellieren | 1 | validated | docs/spec.md §2.1 | Name, E-Mail, PT-Stundensatz |
 | FZ-011 | `CourseType`-Entitaet modellieren | 1 | validated | docs/spec.md §2.1 | Kursart eindeutig benennen |

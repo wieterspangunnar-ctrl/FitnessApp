@@ -1,10 +1,12 @@
+import Link from "next/link";
+
 const modules = [
-  "Mitglieder",
-  "Tarife",
-  "Kurse",
-  "Buchungen",
-  "Personal Training",
-  "Videos"
+  { title: "Mitglieder", description: "Mitgliederverwaltung inklusive Status, Tarif und Vertragsende.", href: "/members" },
+  { title: "Tarife", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" },
+  { title: "Kurse", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" },
+  { title: "Buchungen", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" },
+  { title: "Personal Training", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" },
+  { title: "Videos", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" }
 ];
 
 export default function Home() {
@@ -24,9 +26,14 @@ export default function Home() {
 
       <section className="module-grid" aria-label="Geplante Module">
         {modules.map((module) => (
-          <article className="module-card" key={module}>
-            <h2>{module}</h2>
-            <p>Bereit fuer die Umsetzung nach Backlog und Business Rules.</p>
+          <article className="module-card" key={module.title}>
+            <h2>{module.title}</h2>
+            <p>{module.description}</p>
+            {module.href !== "/" ? (
+              <p style={{ marginTop: 12 }}>
+                <Link href={module.href}>Zur Verwaltung öffnen</Link>
+              </p>
+            ) : null}
           </article>
         ))}
       </section>
