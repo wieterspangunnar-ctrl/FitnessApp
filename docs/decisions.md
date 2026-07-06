@@ -217,6 +217,30 @@ Die Zuordnung wird als eigenstaendiges Prisma-Modell `TrainerQualification` umge
 - Erfordert noch Admin-CRUD und UI-Filter (siehe FZ-019, FZ-022) damit Lisa Qualifikationen pflegen und der Trainer-Dropdown in der Kursplanung korrekt gefiltert wird.
 - Operativ: Bei Schema-Änderungen `prisma migrate` / `prisma generate` ausführen; lokale DB-Migrationen pruefen bevor auf Produktionsdaten umgestellt wird.
 
+## 2026-07-06 - FZ-020 Admin-CRUD fuer Räume umgesetzt
+
+**Kontext:** Lisa braucht eine Admin-Sicht fuer Räume, damit Kurstermine einem eindeutigen Raum zugeordnet werden können. Die Raumverwaltung muss Raumnamen speichern, ändern und löschen können.
+
+### Entscheidung
+
+FZ-020 wird als vollständiger Admin-CRUD für das Prisma-Modell `Room` umgesetzt. Die Umsetzung umfasst:
+
+- Prisma-Datenmodell `Room` mit eindeutiger `name`-Spalte in `prisma/schema.prisma`.
+- API-Route-Handler in `src/app/api/rooms/route.ts` und `src/app/api/rooms/[id]/route.ts` für GET/POST/PUT/DELETE.
+- Admin-Oberfläche in `src/app/rooms/page.tsx` zur Auflistung, Anlage, Bearbeitung und Löschung von Räumen.
+- Verlinkung des Raum-Moduls aus der zentralen App-Startseite `src/app/page.tsx`.
+
+### Alternativen verworfen
+
+- Nur ein Datenmodell ohne Admin-UI: bietet keinen direkten Nutzen für den täglichen Studio-Betrieb.
+- Raumverwaltung nur über Kurs-Formulare: zu umständlich und nicht konsistent mit anderen Stammdaten-CRUDs.
+
+### Konsequenzen
+
+- Lisa kann Räume jetzt produktiv im Adminbereich verwalten.
+- Räume stehen als Referenz für Kursplanung und Kapazitätssteuerung bereit.
+- Das Feature ist abgeschlossen und schließt den Backlog-Eintrag FZ-020 ab.
+
 ### Nächste Schritte
 
 - Implementierung einer Admin-CRUD-API und einfacher Admin-UI fuer `TrainerQualification` (FZ-019).
