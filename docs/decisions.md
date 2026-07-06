@@ -114,6 +114,29 @@ FZ-010 wird als Prisma-Modell `Trainer` umgesetzt und um einfache Admin-CRUD-End
 
 ---
 
+## 2026-07-06 - FZ-011 `CourseType` CRUD und Admin-UI umgesetzt
+
+**Kontext:** `CourseType` war im Datenmodell spezifiziert (siehe `docs/spec.md §2.1`) aber noch nicht via API oder Admin-UI verfügbar. Für Kursplanung, Trainer-Qualifikationen und Kurs-CRUD braucht das System eindeutige Kursarten.
+
+### Entscheidung
+
+FZ-011 wird als schlankes, aber produktives Feature umgesetzt: ein Prisma-Modell `CourseType` bleibt Quelle der Wahrheit (bereits im Schema vorhanden), ergänzt durch Next.js Route-Handler (`GET`/`POST` auf Collection, `PUT`/`DELETE` auf Einzelressource) und eine einfache Admin-Oberfläche für Lisa zum Anlegen, Bearbeiten und Löschen von Kursarten.
+
+Wesentliche Dateien der Umsetzung:
+- `src/app/api/course-types/route.ts` (GET, POST)
+- `src/app/api/course-types/[id]/route.ts` (PUT, DELETE)
+- `src/app/course-types/page.tsx` (Admin-UI CRUD)
+
+### Alternativen verworfen
+- Nur Datenmodell ohne API/UI: liefert keinen sofortigen Nutzen für Admins.
+- GraphQL statt REST: zusätzlicher Aufwand, inkonsistent mit bestehenden Route-Handlern im App-Router.
+
+### Konsequenzen
+- Positiv: Lisa kann Kursarten sofort im Produkt verwalten; Kursplanung und weitere Features (z. B. `TrainerQualification`, `Course`) können `CourseType` referenzieren.
+- Risiko: Eindeutigkeit wird durch Prisma-Constraint (`name` unique) gesichert; UI und API behandeln Fehlerfälle konservativ und liefern klare Fehlermeldungen.
+- Operativ: Bitte nach dem Deploy `npm run prisma:generate`/Migrations-Checks ausführen, falls Schemaänderungen folgen.
+
+
 <!-- Vorlage fuer neue Entscheidungen:
 
 ## JJJJ-MM-TT - Titel der Entscheidung
