@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const modules = [
   { title: "Mitglieder", description: "Mitgliederverwaltung inklusive Status, Tarif und Vertragsende.", href: "/members" },
-  { title: "Tarife", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" },
+  { title: "Tarife", description: "Tarifverwaltung mit Preis, Buchungsfenstern, Videozugriff und PT-Slots.", href: "/tiers" },
   { title: "Kurse", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" },
   { title: "Buchungen", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" },
   { title: "Personal Training", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" },
