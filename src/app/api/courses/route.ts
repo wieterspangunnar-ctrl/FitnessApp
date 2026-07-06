@@ -29,6 +29,18 @@ function parseInteger(value: unknown) {
   return Number.isNaN(parsed) ? null : Math.floor(parsed);
 }
 
+async function isTrainerQualifiedForCourse(trainerId: string, courseTypeId: string) {
+  const qualification = await prisma.trainerQualification.findFirst({
+    where: {
+      trainerId,
+      courseTypeId
+    },
+    select: { id: true }
+  });
+
+  return Boolean(qualification);
+}
+
 export async function GET() {
   const courses = await prisma.course.findMany({
     include: {
@@ -56,6 +68,11 @@ export async function POST(request: Request) {
 
   if (!start || !end || participants === null || participants < 1) {
     return NextResponse.json({ error: "Ungültige Kursdaten" }, { status: 400 });
+  }
+
+  const isQualified = await isTrainerQualifiedForCourse(trainerId, courseTypeId);
+  if (!isQualified) {
+    return NextResponse.json({ error: "Trainer ist für diese Kursart nicht qualifiziert" }, { status: 400 });
   }
 
   try {

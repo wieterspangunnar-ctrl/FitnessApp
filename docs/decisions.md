@@ -259,6 +259,25 @@ FZ-019 wurde als neues Admin-Modul umgesetzt. Technische Eckpunkte:
 - Die Startseite (`src/app/page.tsx`) wurde um einen Verweis auf das neue Modul ergänzt.
 - `docs/backlog.md` wurde auf `done` gesetzt für FZ-019.
 
+## 2026-07-06 - FZ-023 Trainerqualifikation serverseitig erzwungen
+
+**Kontext:** Die Kursplanung hatte bereits eine Filterung im UI, aber keine technische Sicherheitsbarriere. Ein ungültiger Trainer/Kursart-Mix konnte damit trotzdem über die API erzeugt oder geändert werden.
+
+### Entscheidung
+
+FZ-023 wird als serverseitige Validierung umgesetzt. Die API-Endpunkte für Kurse prüfen beim Anlegen und Bearbeiten jetzt direkt über Prisma, ob der gewählte Trainer für die gewählte Kursart qualifiziert ist. Ungültige Kombinationen werden mit einem `400`-Fehler abgelehnt.
+
+### Alternativen verworfen
+
+- Nur UI-Filterung belassen: reicht nicht als Sicherheitsnetz und ist durch direkte API-Aufrufe leicht zu umgehen.
+- Validierung nur im Frontend-Formular: nicht ausreichend für Admin- oder Integrationsfälle.
+
+### Konsequenzen
+
+- Positiv: Die Business Rule BR6 ist jetzt auch auf API-Ebene durchgesetzt.
+- Die Kurs-API ist damit konsistent mit den bestehenden Admin- und Stammdaten-Workflows und schützt vor fehlerhaften Daten.
+- Die Umsetzung bleibt bewusst klein und nutzt das vorhandene Prisma-Modell `TrainerQualification` als Quelle der Wahrheit.
+
 ## 2026-07-06 - FZ-021 Admin-Kurstermine planen umgesetzt
 
 **Kontext:** FZ-021 ist erforderlich, damit Lisa Kurstermine im Adminbereich als eigenständiges CRUD-Feature anlegen, bearbeiten und löschen kann. Der Kursplaner muss Kursart, Start/Ende, Kapazität, Raum und Trainer als Pflichtfelder abbilden.

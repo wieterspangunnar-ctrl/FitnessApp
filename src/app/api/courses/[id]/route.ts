@@ -29,6 +29,18 @@ function parseInteger(value: unknown) {
   return Number.isNaN(parsed) ? null : Math.floor(parsed);
 }
 
+async function isTrainerQualifiedForCourse(trainerId: string, courseTypeId: string) {
+  const qualification = await prisma.trainerQualification.findFirst({
+    where: {
+      trainerId,
+      courseTypeId
+    },
+    select: { id: true }
+  });
+
+  return Boolean(qualification);
+}
+
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = (await request.json()) as UpdateCourseBody;
@@ -58,6 +70,25 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
   if (body.roomId !== undefined) data.roomId = body.roomId;
   if (body.trainerId !== undefined) data.trainerId = body.trainerId;
+
+  if (body.courseTypeId !== undefined || body.trainerId !== undefined) {
+    const existingCourse = await prisma.course.findUnique({
+      where: { id },
+      select: { courseTypeId: true, trainerId: true }
+    });
+
+    if (!existingCourse) {
+      return NextResponse.json({ error: "Kurs nicht gefunden" }, { status: 404 });
+    }
+
+    const effectiveCourseTypeId = body.courseTypeId ?? existingCourse.courseTypeId;
+    const effectiveTrainerId = body.trainerId ?? existingCourse.trainerId;
+
+    const isQualified = await isTrainerQualifiedForCourse(effectiveTrainerId, effectiveCourseTypeId);
+    if (!isQualified) {
+      return NextResponse.json({ error: "Trainer ist für diese Kursart nicht qualifiziert" }, { status: 400 });
+    }
+  }
 
   try {
     const course = await prisma.course.update({
