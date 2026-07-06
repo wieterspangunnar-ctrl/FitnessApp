@@ -203,3 +203,22 @@ FZ-013 wird als vollständige Admin-CRUD-Funktion umgesetzt. Der Prisma-Client n
 - Risiken: Die Raumverwaltung bleibt aktuell einfach gehalten; zusätzliche Validierung für Raumnamen und Konfliktbehandlung kann später ergänzt werden.
 - Operativ: Nach Änderungen an `Room` im Prisma-Schema sollte `prisma generate` im lokalen Setup sichergestellt werden.
 
+## 2026-07-06 - FZ-014 `Course`-Entitaet und Admin-CRUD umgesetzt
+
+**Kontext:** Das System hatte bereits `CourseType`, `Trainer`, und `Room` als Stammdaten, aber noch keine produktive Kursplanung für Lisa. Für FZ-014 muss ein Kurstermin mit Kursart, Start/Ende, Kapazität, Raum und Trainer administrierbar sein.
+
+### Entscheidung
+
+FZ-014 wird als vollständige Admin-CRUD-Funktion umgesetzt. Dazu wurden neue Next.js App Router API-Routen unter `src/app/api/courses` (`GET`, `POST`, `PUT`, `DELETE`) sowie eine Admin-Oberfläche `src/app/courses/page.tsx` hinzugefügt. Die UI erlaubt die Auswahl von Kursart, Trainer, Raum, Startzeit, Endzeit und maximaler Teilnehmerzahl.
+
+### Alternativen verworfen
+
+- Nur Schema-Erweiterung ohne produktive Admin-UI: Das Feature würde keinen direkten Nutzen für Lisa liefern.
+- Separate Server-API außerhalb des App-Routers: Mit dem vorhandenen Next.js-Stack wäre das unnötig komplex.
+
+### Konsequenzen
+
+- Positiv: Kurstermine können jetzt direkt im Produkt angelegt, bearbeitet und gelöscht werden. Die Implementierung ist konsistent zur vorhandenen CRUD-Architektur.
+- Risiko: Die aktuelle Version prüft noch nicht serverseitig die Trainerqualifikation für die Kursart; diese Validierung wird mit FZ-023 ergänzt.
+- Operativ: Vor weitergehender Kurslogik sollten Integrationstests für Kursdaten und die späteren Buchungsregeln erstellt werden.
+

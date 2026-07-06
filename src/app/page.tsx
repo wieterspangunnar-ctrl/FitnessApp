@@ -5,7 +5,7 @@ const modules = [
   { title: "Tarife", description: "Tarifverwaltung mit Preis, Buchungsfenstern, Videozugriff und PT-Slots.", href: "/tiers" },
   { title: "Trainer", description: "Trainer im Studio verwalten mit E-Mail und PT-Stundensatz.", href: "/trainers" },
   { title: "Räume", description: "Räume für Kursplanung anlegen und verwalten.", href: "/rooms" },
-  { title: "Kurse", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" },
+  { title: "Kurse", description: "Kurse planen mit Kursart, Zeit, Kapazität, Raum und Trainer.", href: "/courses" },
   { title: "Buchungen", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" },
   { title: "Personal Training", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" },
   { title: "Videos", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" }
