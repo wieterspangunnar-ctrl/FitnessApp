@@ -91,6 +91,28 @@ FZ-009 wird als Prisma-Modell `MembershipTier` mit den Feldern `monthlyPrice`, `
 - Admins koennen Membership-Tarife direkt verwalten, ohne Code- oder DB-Eingriffe.
 - Die Implementierung bleibt konsistent mit dem vorhandenen Prisma/Next.js-Stack und legt die Grundlage fuer FZ-016, FZ-028 und weitere Buchungsregeln.
 
+## 2026-07-06 - FZ-016 Admin-CRUD fuer Membership-Tarife umgesetzt
+
+**Kontext:** Lisa braucht eine zentrale Tarifpflege für Basic, Plus und Premium. Tarife sollen nicht nur Preise, sondern auch Buchungsfenster, Videozugriff, Spätstorno-Regeln und inklusive PT-Slots abbilden.
+
+### Entscheidung
+
+FZ-016 wird als Admin-CRUD für das bereits bestehende Prisma-Modell `MembershipTier` umgesetzt. Die Umsetzung umfasst:
+- API-Route-Handler in `src/app/api/tiers/route.ts` und `src/app/api/tiers/[id]/route.ts`
+- Admin-UI in `src/app/tiers/page.tsx` für Anlegen, Bearbeiten, Löschen
+- vorbefüllte Standardtarife via `src/lib/member-seed.ts` und `ensureDefaultMembershipTiers()`
+
+### Alternativen verworfen
+
+- Nur Datenmodell ohne Admin-UI: bietet keinen direkten Nutzen für Lisa.
+- Separater Tarif-Service: zu hoher Architekturaufwand für Phase 1 und inkonsistent mit dem bestehenden Next.js-App-Router-Ansatz.
+
+### Konsequenzen
+
+- Positiv: Tarife können nun produktiv im Adminbereich verwaltet werden.
+- Die Tarifdaten sind als zentrale Basis für Buchungsfenster, Videozugriff und PT-Abrechnung verfügbar.
+- Die Umsetzung bleibt konsistent mit dem bestehenden Prisma/Next.js-Stack.
+
 ---
 
 ## 2026-07-06 - FZ-010 Trainer-Entitaet und Admin-CRUD eingefuehrt
