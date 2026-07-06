@@ -43,7 +43,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-014 | `Course`-Entitaet modellieren | 1 | done | docs/spec.md §2.1 | Kursart, Zeit, Kapazitaet, Raum, Trainer |
 | FZ-015 | Admin-CRUD fuer Mitglieder | 1 | done | docs/spec.md §1, §2.1 | Stammdaten inkl. Status und Vertragsende |
 | FZ-016 | Admin-CRUD fuer Tarife | 1 | done | docs/spec.md §1, §2.1 | Basic, Plus, Premium und Regelparameter |
-| FZ-017 | Admin-CRUD fuer Trainer | 1 | validated | docs/spec.md §1, §2.1 | Inkl. PT-Stundensatz |
+| FZ-017 | Admin-CRUD fuer Trainer | 1 | done | docs/spec.md §1, §2.1 | Implementiert: `src/app/api/trainers`, `src/app/trainers/page.tsx` |
 | FZ-018 | Admin-CRUD fuer Kursarten | 1 | validated | docs/spec.md §1, §2.1 | Yoga, HIIT usw. |
 | FZ-019 | Admin-CRUD fuer Trainerqualifikationen | 1 | validated | docs/spec.md §3, BR6 | Welche Trainer welche Kursarten unterrichten duerfen |
 | FZ-020 | Admin-CRUD fuer Raeume | 1 | validated | docs/spec.md §1, §2.1 | Grundlage fuer Kurstermine |

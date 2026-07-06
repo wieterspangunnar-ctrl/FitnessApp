@@ -136,6 +136,22 @@ FZ-010 wird als Prisma-Modell `Trainer` umgesetzt und um einfache Admin-CRUD-End
 
 ---
 
+## 2026-07-06 - FZ-017 Admin-CRUD fuer Trainer abgeschlossen
+
+**Kontext:** Die Trainerverwaltung benötigt eine produktive Admin-Lösung inklusive PT-Stundensatz, damit Maria Trainerdaten einfach pflegen und spätere PT-Abrechnung unterstützen kann.
+
+### Entscheidung
+
+FZ-017 wird als Admin-CRUD mit Next.js App-Router API-Routen (`src/app/api/trainers`, `src/app/api/trainers/[id]/route.ts`) und einer Adminseite (`src/app/trainers/page.tsx`) umgesetzt. Die API validiert Pflichtfelder und speichert `hourlyPtRate` als Decimal.
+
+### Konsequenzen
+
+- Lisa kann Trainer jetzt produktiv anlegen, bearbeiten und löschen.
+- Der PT-Stundensatz steht direkt für spätere Personal-Training-Abrechnung bereit.
+- Die Umsetzung bleibt konsistent mit dem bestehenden Prisma/Next.js-Stack.
+
+---
+
 ## 2026-07-06 - FZ-011 `CourseType` CRUD und Admin-UI umgesetzt
 
 **Kontext:** `CourseType` war im Datenmodell spezifiziert (siehe `docs/spec.md §2.1`) aber noch nicht via API oder Admin-UI verfügbar. Für Kursplanung, Trainer-Qualifikationen und Kurs-CRUD braucht das System eindeutige Kursarten.
