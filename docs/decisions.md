@@ -222,6 +222,30 @@ Die Zuordnung wird als eigenstaendiges Prisma-Modell `TrainerQualification` umge
 - Implementierung einer Admin-CRUD-API und einfacher Admin-UI fuer `TrainerQualification` (FZ-019).
 - Serverseitige Erzwingung der Qualifikation beim Anlegen von Kursen (FZ-023) bereits in Planung.
 
+## 2026-07-06 - FZ-019 Admin-CRUD fuer Trainerqualifikationen umgesetzt
+
+**Kontext:** FZ-019 erweitert die Datenmodell-Umsetzung von `TrainerQualification` um eine operable Admin-Verwaltung. Lisa muss Trainer/Kursart-Zuordnungen direkt im Produkt pflegen können, damit später bei der Kursplanung nur passende Trainer angeboten werden.
+
+### Entscheidung
+
+FZ-019 wurde als neues Admin-Modul umgesetzt. Technische Eckpunkte:
+
+- Neue API-Routen unter `src/app/api/trainer-qualifications` für `GET`, `POST`, `DELETE`.
+- Neue Admin-UI unter `src/app/trainer-qualifications/page.tsx` mit Formular zum Anlegen und Liste zum Löschen bestehender Qualifikationen.
+- Die Startseite (`src/app/page.tsx`) wurde um einen Verweis auf das neue Modul ergänzt.
+- `docs/backlog.md` wurde auf `done` gesetzt für FZ-019.
+
+### Alternativen verworfen
+
+- Nur Backend-CRUD ohne Admin-Oberfläche: schlechte Usability für Lisa und kein schneller Mehrwert.
+- Trainerqualifikationen als statische Konfiguration statt persistenter Entität: erhöhtes Fehler- und Pflegepotenzial.
+
+### Konsequenzen
+
+- Positiv: Lisa kann Qualifikationen im Produkt pflegen, die spätere Kursplanung nutzt.
+- Positiv: Das System bleibt konsistent mit bestehendem App-Router-CRUD-Pattern und dem Prisma-Datenmodell.
+- Risiko: Die aktuelle Version implementiert noch keine serverseitige Filterung des Trainer-Dropdowns in `Course`-Formularen; das ist als nächster Schritt FZ-022/FZ-023 vorgesehen.
+
 ## 2026-07-06 - FZ-013 `Room`-Entitaet als Admin-CRUD umgesetzt
 
 **Kontext:** Das Datenmodell spezifiziert bereits `Room` als Kernentität für die Kursplanung, aber es fehlte eine produktive Admin-Verwaltung für Räume.

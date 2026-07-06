@@ -7,6 +7,7 @@ const modules = [
   { title: "Räume", description: "Räume für Kursplanung anlegen und verwalten.", href: "/rooms" },
   { title: "Kurse", description: "Kurse planen mit Kursart, Zeit, Kapazität, Raum und Trainer.", href: "/courses" },
   { title: "Kursarten", description: "Kursarten definieren und verwalten für die Kursplanung.", href: "/course-types" },
+  { title: "Trainerqualifikationen", description: "Trainer für Kursarten freigeben, damit nur passende Trainer auswählbar sind.", href: "/trainer-qualifications" },
   { title: "Buchungen", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" },
   { title: "Personal Training", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" },
   { title: "Videos", description: "Bereit fuer die Umsetzung nach Backlog und Business Rules.", href: "/" }
