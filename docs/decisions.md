@@ -184,3 +184,22 @@ Die Zuordnung wird als eigenstaendiges Prisma-Modell `TrainerQualification` umge
 - Implementierung einer Admin-CRUD-API und einfacher Admin-UI fuer `TrainerQualification` (FZ-019).
 - Serverseitige Erzwingung der Qualifikation beim Anlegen von Kursen (FZ-023) bereits in Planung.
 
+## 2026-07-06 - FZ-013 `Room`-Entitaet als Admin-CRUD umgesetzt
+
+**Kontext:** Das Datenmodell spezifiziert bereits `Room` als Kernentität für die Kursplanung, aber es fehlte eine produktive Admin-Verwaltung für Räume.
+
+### Entscheidung
+
+FZ-013 wird als vollständige Admin-CRUD-Funktion umgesetzt. Der Prisma-Client nutzt das bestehende `Room`-Modell mit dem eindeutigen `name`-Feld. Dazu wurden neue Next.js App Router API-Routen unter `src/app/api/rooms` und eine Admin-Seite `src/app/rooms/page.tsx` ergänzt.
+
+### Alternativen verworfen
+
+- Nur Schema-Erweiterung ohne UI: Zu wenig nutzbarer Mehrwert, da die Raumverwaltung für Kursplanung direkt im Admin-Produkt verfügbar sein muss.
+- Raumdaten per Seeder oder externem Tool pflegen: Unpraktisch für Lisas laufenden Studiobetrieb und nicht konsistent mit dem restlichen App-Router-CRUD-Ansatz.
+
+### Konsequenzen
+
+- Positiv: Räume können jetzt im Produkt angelegt, bearbeitet und gelöscht werden. Das System ist bereit für Kursplanung mit Raum-Referenzen.
+- Risiken: Die Raumverwaltung bleibt aktuell einfach gehalten; zusätzliche Validierung für Raumnamen und Konfliktbehandlung kann später ergänzt werden.
+- Operativ: Nach Änderungen an `Room` im Prisma-Schema sollte `prisma generate` im lokalen Setup sichergestellt werden.
+
