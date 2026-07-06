@@ -294,6 +294,24 @@ FZ-021 wurde als vollständige Kursplanungsfunktion umgesetzt. Technische Eckpun
 - Positiv: Das System bleibt konsistent mit bestehendem App-Router-CRUD-Pattern und dem Prisma-Datenmodell.
 - Risiko: Die aktuelle Version implementiert noch keine serverseitige Filterung des Trainer-Dropdowns in `Course`-Formularen; das ist als nächster Schritt FZ-022/FZ-023 vorgesehen.
 
+## 2026-07-06 - FZ-022 Trainer-Dropdown nach Qualifikation filtern umgesetzt
+
+**Kontext:** FZ-022 ergänzt die Kursplanung, damit im Adminformular nur Trainer auswählbar sind, die für die gewählte Kursart qualifiziert sind. Das reduziert Fehleingaben und passt die UI an den bestehenden `TrainerQualification`-Workflow an.
+
+### Entscheidung
+
+FZ-022 wurde in `src/app/courses/page.tsx` umgesetzt. Technische Eckpunkte:
+
+- Der Trainer-Dropdown wird nach `courseTypeId` basierend auf den geladenen `trainerQualifications` gefiltert.
+- Bei geänderter Kursart aktualisiert sich die Trainerliste automatisch.
+- Wenn für die gewählte Kursart keine qualifizierten Trainer vorhanden sind, zeigt das Dropdown einen Hinweis an.
+
+### Konsequenzen
+
+- Lisa sieht im Kursformular nur passende Trainer und kann keine unqualifizierten Trainer auswählen.
+- Die UI ist nun konsistent mit der Admin-Verwaltung von `TrainerQualification` (FZ-019) und der bestehenden Kursplanung (FZ-021).
+- Die serverseitige Absicherung bleibt als Folge-Task unter FZ-023 bestehen.
+
 ## 2026-07-06 - FZ-013 `Room`-Entitaet als Admin-CRUD umgesetzt
 
 **Kontext:** Das Datenmodell spezifiziert bereits `Room` als Kernentität für die Kursplanung, aber es fehlte eine produktive Admin-Verwaltung für Räume.

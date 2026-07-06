@@ -48,7 +48,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-019 | Admin-CRUD fuer Trainerqualifikationen | 1 | done | docs/spec.md §3, BR6 | Welche Trainer welche Kursarten unterrichten duerfen |
 | FZ-020 | Admin-CRUD fuer Raeume | 1 | done | docs/spec.md §1, §2.1 | Implementiert: Raume anlegen, bearbeiten, löschen und in Kursplanung nutzbar |
 | FZ-021 | Admin-Kurstermine planen | 1 | done | docs/spec.md §1, §2.1 | Implementiert in `src/app/courses/page.tsx` und `src/app/api/courses/*` |
-| FZ-022 | Trainer-Dropdown nach Qualifikation filtern | 1 | validated | docs/spec.md BR6 | Im Admin-Bereich nur passende Trainer anzeigen |
+| FZ-022 | Trainer-Dropdown nach Qualifikation filtern | 1 | done | docs/spec.md BR6 | Im Admin-Bereich nur passende Trainer anzeigen |
 | FZ-023 | Trainerqualifikation serverseitig erzwingen | 1 | validated | docs/spec.md BR6 | Sicherheitsnetz unabhaengig vom UI |
 
 ### Phase 2 - Member-Kurse, Buchung & Warteliste

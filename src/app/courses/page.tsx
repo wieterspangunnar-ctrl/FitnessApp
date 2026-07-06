@@ -5,6 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 type CourseType = { id: string; name: string };
 type Room = { id: string; name: string };
 type Trainer = { id: string; firstName: string; lastName: string };
+type TrainerQualification = {
+  trainer: Trainer;
+  courseType: CourseType;
+};
 type Course = {
   id: string;
   startTime: string;
@@ -50,28 +54,32 @@ export default function CoursesPage() {
   const [courseTypes, setCourseTypes] = useState<CourseType[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
+  const [trainerQualifications, setTrainerQualifications] = useState<TrainerQualification[]>([]);
   const [form, setForm] = useState<CourseForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
-    const [coursesRes, courseTypesRes, roomsRes, trainersRes] = await Promise.all([
+    const [coursesRes, courseTypesRes, roomsRes, trainersRes, qualificationsRes] = await Promise.all([
       fetch("/api/courses"),
       fetch("/api/course-types"),
       fetch("/api/rooms"),
-      fetch("/api/trainers")
+      fetch("/api/trainers"),
+      fetch("/api/trainer-qualifications")
     ]);
 
     const coursesData = await coursesRes.json();
     const courseTypesData = await courseTypesRes.json();
     const roomsData = await roomsRes.json();
     const trainersData = await trainersRes.json();
+    const qualificationsData = await qualificationsRes.json();
 
     setCourses(coursesData.courses ?? []);
     setCourseTypes(courseTypesData.courseTypes ?? []);
     setRooms(roomsData.rooms ?? []);
     setTrainers(trainersData.trainers ?? []);
+    setTrainerQualifications(qualificationsData.trainerQualifications ?? []);
     setLoading(false);
   };
 
@@ -138,6 +146,20 @@ export default function CoursesPage() {
     }
   };
 
+  const qualifiedTrainers = useMemo(() => {
+    if (!form.courseTypeId) {
+      return trainers;
+    }
+
+    const qualifiedTrainerIds = new Set(
+      trainerQualifications
+        .filter((qualification) => qualification.courseType.id === form.courseTypeId)
+        .map((qualification) => qualification.trainer.id)
+    );
+
+    return trainers.filter((trainer) => qualifiedTrainerIds.has(trainer.id));
+  }, [form.courseTypeId, trainerQualifications, trainers]);
+
   const trainerLabel = useMemo(
     () => (trainerId: string) => {
       const trainer = trainers.find((item) => item.id === trainerId);
@@ -175,9 +197,13 @@ export default function CoursesPage() {
               Trainer
               <select name="trainerId" value={form.trainerId} onChange={handleChange} required>
                 <option value="">Bitte wählen</option>
-                {trainers.map((item) => (
-                  <option key={item.id} value={item.id}>{item.firstName} {item.lastName}</option>
-                ))}
+                {qualifiedTrainers.length === 0 && form.courseTypeId ? (
+                  <option value="" disabled>Keine qualifizierten Trainer verfügbar</option>
+                ) : (
+                  qualifiedTrainers.map((item) => (
+                    <option key={item.id} value={item.id}>{item.firstName} {item.lastName}</option>
+                  ))
+                )}
               </select>
             </label>
             <label>
