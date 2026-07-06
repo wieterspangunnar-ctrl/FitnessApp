@@ -41,7 +41,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-012 | `TrainerQualification`-Relation modellieren | 1 | done | docs/spec.md §2.1, §3 | Implementiert: Prisma-Modell und generierter Client (`prisma/schema.prisma`, `src/generated/prisma`) |
 | FZ-013 | `Room`-Entitaet modellieren | 1 | done | docs/spec.md §2.1 | Raumname; Admin-CRUD umgesetzt |
 | FZ-014 | `Course`-Entitaet modellieren | 1 | done | docs/spec.md §2.1 | Kursart, Zeit, Kapazitaet, Raum, Trainer |
-| FZ-015 | Admin-CRUD fuer Mitglieder | 1 | validated | docs/spec.md §1, §2.1 | Stammdaten inkl. Status und Vertragsende |
+| FZ-015 | Admin-CRUD fuer Mitglieder | 1 | done | docs/spec.md §1, §2.1 | Stammdaten inkl. Status und Vertragsende |
 | FZ-016 | Admin-CRUD fuer Tarife | 1 | validated | docs/spec.md §1, §2.1 | Basic, Plus, Premium und Regelparameter |
 | FZ-017 | Admin-CRUD fuer Trainer | 1 | validated | docs/spec.md §1, §2.1 | Inkl. PT-Stundensatz |
 | FZ-018 | Admin-CRUD fuer Kursarten | 1 | validated | docs/spec.md §1, §2.1 | Yoga, HIIT usw. |

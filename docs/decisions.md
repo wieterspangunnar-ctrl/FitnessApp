@@ -222,3 +222,26 @@ FZ-014 wird als vollständige Admin-CRUD-Funktion umgesetzt. Dazu wurden neue Ne
 - Risiko: Die aktuelle Version prüft noch nicht serverseitig die Trainerqualifikation für die Kursart; diese Validierung wird mit FZ-023 ergänzt.
 - Operativ: Vor weitergehender Kurslogik sollten Integrationstests für Kursdaten und die späteren Buchungsregeln erstellt werden.
 
+## 2026-07-06 - FZ-015 Admin-CRUD für Mitglieder umgesetzt
+
+**Kontext:** Für Lisa muss der Admin-Zugang zur Mitgliederverwaltung vollständig sein, inklusive Stammdaten, Vertragsende und Status. Das System hatte bereits das `Member`-Datenmodell, aber noch keine konsistente Admin-CRUD-Funktion für Members.
+
+### Entscheidung
+
+FZ-015 wird als vollständiges Admin-CRUD umgesetzt. Die Umsetzung umfasst:
+- `src/app/api/members/route.ts` mit `GET` und `POST`
+- `src/app/api/members/[id]/route.ts` mit `GET`, `PUT` und `DELETE`
+- `src/app/members/page.tsx` als Admin-UI mit Formular für Anlegen/Bearbeiten und Liste der Mitglieder
+- Anzeige und Persistenz von `contractEndDate` und `status`
+
+### Alternativen verworfen
+
+- Nur Datenmodell ohne Admin-UI: zu wenig nutzbarer Mehrwert für Lisa.
+- Member-Verwaltung in einem separaten Backend-Service: zu viel Aufwand für den bestehenden Next.js MVP-Stack.
+
+### Konsequenzen
+
+- Positiv: Der Admin kann Mitglieder jetzt produktiv anlegen, editieren und löschen.
+- Positiv: Die Datenbasis für spätere Sperren und Vertragswarnungen ist damit lückenlos vorhanden.
+- Operativ: Für weitere Features wie Buchungslimits, No-Show-Sperren und Vertragsende-Reminder kann `Member.contractEndDate` nun zuverlässig genutzt werden.
+

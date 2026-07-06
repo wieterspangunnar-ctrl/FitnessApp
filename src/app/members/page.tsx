@@ -186,6 +186,9 @@ export default function MembersPage() {
                     <p style={{ margin: "4px 0 0", color: "var(--muted)" }}>
                       Tarif: {member.membershipTier.name} · Status: {member.status}
                     </p>
+                    <p style={{ margin: "4px 0 0", color: "var(--muted)" }}>
+                      Vertragsende: {member.contractEndDate.slice(0, 10)}
+                    </p>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button type="button" onClick={() => startEdit(member)}>Bearbeiten</button>
