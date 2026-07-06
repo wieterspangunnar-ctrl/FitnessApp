@@ -36,7 +36,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-007 | Relationales Datenmodell initialisieren | 1 | done | docs/spec.md §2 | Initiales Prisma-Schema mit UUID Primary Keys und Foreign Keys |
 | FZ-008 | `Member`-Entitaet modellieren | 1 | done | docs/spec.md §2.1 | Implementiert: Mitgliederverwaltung mit Prisma-Modell, API-Routen und Admin-UI fuer Anlegen/Bearbeiten/Loeschen; dokumentiert in `docs/decisions.md` |
 | FZ-009 | `MembershipTier`-Entitaet modellieren | 1 | done | docs/spec.md §2.1 | Implementiert: Tarif-CRUD, UI und Datenmodell |
-| FZ-010 | `Trainer`-Entitaet modellieren | 1 | validated | docs/spec.md §2.1 | Name, E-Mail, PT-Stundensatz |
+| FZ-010 | `Trainer`-Entitaet modellieren | 1 | done | docs/spec.md §2.1 | Implementiert: Trainer-CRUD mit Name, E-Mail und PT-Stundensatz |
 | FZ-011 | `CourseType`-Entitaet modellieren | 1 | validated | docs/spec.md §2.1 | Kursart eindeutig benennen |
 | FZ-012 | `TrainerQualification`-Relation modellieren | 1 | validated | docs/spec.md §2.1, §3 | n:m Trainer zu Kursart |
 | FZ-013 | `Room`-Entitaet modellieren | 1 | validated | docs/spec.md §2.1 | Raumname |

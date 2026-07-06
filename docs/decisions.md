@@ -93,6 +93,27 @@ FZ-009 wird als Prisma-Modell `MembershipTier` mit den Feldern `monthlyPrice`, `
 
 ---
 
+## 2026-07-06 - FZ-010 Trainer-Entitaet und Admin-CRUD eingefuehrt
+
+**Kontext:** Das Modell fuer Trainer musste auf die vorhandene Kurs- und PT-Planung vorbereitet werden, damit Lisa Trainer mit E-Mail-Adresse und stundenbasiertem Personal-Training-Satz verwalten kann.
+
+### Entscheidung
+
+FZ-010 wird als Prisma-Modell `Trainer` umgesetzt und um einfache Admin-CRUD-Endpoints erweitert. Dazu wurden neue Next.js API-Route-Handler in `src/app/api/trainers` hinzugefügt und eine Admin-Oberfläche in `src/app/trainers/page.tsx` implementiert.
+
+### Alternativen verworfen
+
+- Nur Datenmodell ohne Admin-UI: zu wenig direkt nutzbarer Wert für das MVP.
+- Trainerverwaltung per DB-Seeding oder externem Tool: zu unpraktisch für Lisas tägliches Management.
+
+### Konsequenzen
+
+- Lisa kann Trainer jetzt direkt im Produkt anlegen, bearbeiten und löschen.
+- Das System hat eine klare Basis für spätere Features wie Kursplanung, Trainerqualifikationen und PT-Abrechnung.
+- Die Implementierung bleibt konsistent mit dem bestehenden Next.js/Prisma-Stack und fügt kein neues Backend-Pattern hinzu.
+
+---
+
 <!-- Vorlage fuer neue Entscheidungen:
 
 ## JJJJ-MM-TT - Titel der Entscheidung
