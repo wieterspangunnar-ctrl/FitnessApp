@@ -155,3 +155,32 @@ Was haben wir entschieden?
 - Negativ / Risiken
 
 -->
+
+## 2026-07-06 - FZ-012 `TrainerQualification` (n:m) als relationale Entität umgesetzt
+
+**Kontext:** Das System braucht eine robuste Zuordnung, welche `Trainer` welche `CourseType` unterrichten dürfen. Diese Information ist Grundlage fuer sichere Kursplanung (BR6) und spätere UI-Filter/Validierungen.
+
+### Entscheidung
+
+Die Zuordnung wird als eigenstaendiges Prisma-Modell `TrainerQualification` umgesetzt (Join-Tabelle). Technische Eckpunkte:
+
+- Relationale Modellierung in `prisma/schema.prisma` mit Feldern `trainerId` und `courseTypeId` und einer zusammengesetzten Unique-Constraint `@@unique([trainerId, courseTypeId])`.
+- Fremdschluessel-Relationen auf `Trainer` und `CourseType` mit `onDelete: Cascade`.
+- Prisma Client wurde generiert unter `src/generated/prisma`, CRUD-Operationen stehen via `prisma.trainerQualification` zur Verfuegung.
+
+### Alternativen verworfen
+
+- Denormalisierte Liste von `courseTypeId`s als JSON-Feld im `Trainer`-Modell: einfacher, aber schwieriger zu validieren, indexieren und zu referenzieren in Prisma/SQL.
+- Tag-/String-basiertes Mapping: weniger strenge Datenintegritaet, hohes Fehlerpotential bei Umbenennungen/Refactorings.
+
+### Konsequenzen
+
+- Positiv: Sauberes, normalisiertes Datenmodell erleichtert serverseitige Validierung, eindeutige Constraints verhindern doppelte Eintraege.
+- Erfordert noch Admin-CRUD und UI-Filter (siehe FZ-019, FZ-022) damit Lisa Qualifikationen pflegen und der Trainer-Dropdown in der Kursplanung korrekt gefiltert wird.
+- Operativ: Bei Schema-Änderungen `prisma migrate` / `prisma generate` ausführen; lokale DB-Migrationen pruefen bevor auf Produktionsdaten umgestellt wird.
+
+### Nächste Schritte
+
+- Implementierung einer Admin-CRUD-API und einfacher Admin-UI fuer `TrainerQualification` (FZ-019).
+- Serverseitige Erzwingung der Qualifikation beim Anlegen von Kursen (FZ-023) bereits in Planung.
+

@@ -38,7 +38,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-009 | `MembershipTier`-Entitaet modellieren | 1 | done | docs/spec.md §2.1 | Implementiert: Tarif-CRUD, UI und Datenmodell |
 | FZ-010 | `Trainer`-Entitaet modellieren | 1 | done | docs/spec.md §2.1 | Implementiert: Trainer-CRUD mit Name, E-Mail und PT-Stundensatz |
 | FZ-011 | `CourseType`-Entitaet modellieren | 1 | done | docs/spec.md §2.1 | Implementiert: API (`src/app/api/course-types/*`) und Admin-UI (`src/app/course-types/page.tsx`) |
-| FZ-012 | `TrainerQualification`-Relation modellieren | 1 | validated | docs/spec.md §2.1, §3 | n:m Trainer zu Kursart |
+| FZ-012 | `TrainerQualification`-Relation modellieren | 1 | done | docs/spec.md §2.1, §3 | Implementiert: Prisma-Modell und generierter Client (`prisma/schema.prisma`, `src/generated/prisma`) |
 | FZ-013 | `Room`-Entitaet modellieren | 1 | validated | docs/spec.md §2.1 | Raumname |
 | FZ-014 | `Course`-Entitaet modellieren | 1 | validated | docs/spec.md §2.1 | Kursart, Zeit, Kapazitaet, Raum, Trainer |
 | FZ-015 | Admin-CRUD fuer Mitglieder | 1 | validated | docs/spec.md §1, §2.1 | Stammdaten inkl. Status und Vertragsende |
