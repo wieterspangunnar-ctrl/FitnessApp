@@ -259,6 +259,30 @@ FZ-019 wurde als neues Admin-Modul umgesetzt. Technische Eckpunkte:
 - Die Startseite (`src/app/page.tsx`) wurde um einen Verweis auf das neue Modul ergänzt.
 - `docs/backlog.md` wurde auf `done` gesetzt für FZ-019.
 
+## 2026-07-06 - FZ-021 Admin-Kurstermine planen umgesetzt
+
+**Kontext:** FZ-021 ist erforderlich, damit Lisa Kurstermine im Adminbereich als eigenständiges CRUD-Feature anlegen, bearbeiten und löschen kann. Der Kursplaner muss Kursart, Start/Ende, Kapazität, Raum und Trainer als Pflichtfelder abbilden.
+
+### Entscheidung
+
+FZ-021 wurde als vollständige Kursplanungsfunktion umgesetzt. Technische Eckpunkte:
+
+- Neue Admin-UI in `src/app/courses/page.tsx` mit Formular für `courseTypeId`, `startTime`, `endTime`, `maxParticipants`, `roomId` und `trainerId`.
+- Neue API-Endpunkte in `src/app/api/courses/route.ts` und `src/app/api/courses/[id]/route.ts` für `GET`, `POST`, `PUT` und `DELETE`.
+- UI und API validieren Pflichtfelder, Datum/Zeit und minimale Teilnehmerzahl.
+- Kurse werden mit zugehörigen `CourseType`, `Room` und `Trainer` geladen und über die Admin-Übersicht dargestellt.
+
+### Alternativen verworfen
+
+- Nur ein Datenmodell ohne Admin-Oberfläche: zu wenig direkt anwendbarer Wert für Lisa.
+- Externe Kursplanungs-App / separates Backend: unnötiger Architekturaufwand für den MVP und inkonsistent mit dem bestehenden Next.js-App-Router-Ansatz.
+
+### Konsequenzen
+
+- Lisa kann Kurstermine jetzt direkt im Adminbereich planen und verwalten.
+- Die Basis für weiterführende Features wie Buchung, Trainerqualifikationsprüfung (FZ-022/FZ-023) und Kursübersicht ist gelegt.
+- Die Implementierung bleibt klein, klar und konsistent mit dem aktuellen Prisma/Next.js-Stack.
+
 ### Alternativen verworfen
 
 - Nur Backend-CRUD ohne Admin-Oberfläche: schlechte Usability für Lisa und kein schneller Mehrwert.
