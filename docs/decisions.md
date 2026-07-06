@@ -152,13 +152,13 @@ FZ-017 wird als Admin-CRUD mit Next.js App-Router API-Routen (`src/app/api/train
 
 ---
 
-## 2026-07-06 - FZ-011 `CourseType` CRUD und Admin-UI umgesetzt
+## 2026-07-06 - FZ-011 `CourseType` Datenmodell & FZ-018 Admin-CRUD umgesetzt
 
-**Kontext:** `CourseType` war im Datenmodell spezifiziert (siehe `docs/spec.md §2.1`) aber noch nicht via API oder Admin-UI verfügbar. Für Kursplanung, Trainer-Qualifikationen und Kurs-CRUD braucht das System eindeutige Kursarten.
+**Kontext:** `CourseType` war im Datenmodell spezifiziert (siehe `docs/spec.md §2.1`) und bildet die Grundlage für Kursplanung, Trainerqualifikationen und Kursverwaltung.
 
 ### Entscheidung
 
-FZ-011 wird als schlankes, aber produktives Feature umgesetzt: ein Prisma-Modell `CourseType` bleibt Quelle der Wahrheit (bereits im Schema vorhanden), ergänzt durch Next.js Route-Handler (`GET`/`POST` auf Collection, `PUT`/`DELETE` auf Einzelressource) und eine einfache Admin-Oberfläche für Lisa zum Anlegen, Bearbeiten und Löschen von Kursarten.
+FZ-011 wurde als Prisma-Datenmodell für `CourseType` umgesetzt. Aufbauend darauf wurde FZ-018 als Admin-CRUD ergänzt: ein Prisma-Modell `CourseType` bleibt Quelle der Wahrheit, ergänzt durch Next.js Route-Handler (`GET`/`POST` auf Collection, `PUT`/`DELETE` auf Einzelressource) und eine einfache Admin-Oberfläche für Lisa zum Anlegen, Bearbeiten und Löschen von Kursarten.
 
 Wesentliche Dateien der Umsetzung:
 - `src/app/api/course-types/route.ts` (GET, POST)
@@ -170,7 +170,7 @@ Wesentliche Dateien der Umsetzung:
 - GraphQL statt REST: zusätzlicher Aufwand, inkonsistent mit bestehenden Route-Handlern im App-Router.
 
 ### Konsequenzen
-- Positiv: Lisa kann Kursarten sofort im Produkt verwalten; Kursplanung und weitere Features (z. B. `TrainerQualification`, `Course`) können `CourseType` referenzieren.
+- Positiv: Lisa kann Kursarten jetzt direkt im Produkt verwalten; Kursplanung und weitere Features (z. B. `TrainerQualification`, `Course`) können `CourseType` referenzieren.
 - Risiko: Eindeutigkeit wird durch Prisma-Constraint (`name` unique) gesichert; UI und API behandeln Fehlerfälle konservativ und liefern klare Fehlermeldungen.
 - Operativ: Bitte nach dem Deploy `npm run prisma:generate`/Migrations-Checks ausführen, falls Schemaänderungen folgen.
 

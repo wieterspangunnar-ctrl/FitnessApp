@@ -73,7 +73,7 @@ export default function CourseTypesPage() {
     <main className="shell">
       <section className="hero">
         <div>
-          <p className="eyebrow">FZ-011</p>
+          <p className="eyebrow">FZ-018</p>
           <h1>Kursarten verwalten</h1>
           <p className="intro">Kursarten (z. B. Yoga, HIIT) zentral anlegen. Namen müssen eindeutig sein.</p>
         </div>
