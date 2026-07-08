@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isCourseWithinBookingWindow } from "@/lib/booking-window";
 
 type CreateCourseBody = {
   courseTypeId?: string;
@@ -41,7 +42,37 @@ async function isTrainerQualifiedForCourse(trainerId: string, courseTypeId: stri
   return Boolean(qualification);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const memberId = searchParams.get("memberId");
+
+  if (memberId) {
+    const member = await prisma.member.findUnique({
+      where: { id: memberId },
+      include: { membershipTier: true }
+    });
+
+    if (!member) {
+      return NextResponse.json({ error: "Mitglied nicht gefunden" }, { status: 404 });
+    }
+
+    const now = new Date();
+    const courses = await prisma.course.findMany({
+      include: {
+        courseType: true,
+        room: true,
+        trainer: true
+      },
+      orderBy: { startTime: "asc" }
+    });
+
+    const visibleCourses = courses.filter((course) =>
+      isCourseWithinBookingWindow(course.startTime, member.membershipTier.bookingWindowDays, now)
+    );
+
+    return NextResponse.json({ courses: visibleCourses });
+  }
+
   const courses = await prisma.course.findMany({
     include: {
       courseType: true,

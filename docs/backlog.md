@@ -59,7 +59,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-025 | `Waitlist`-Entitaet modellieren | 2 | done | docs/spec.md §2.1, §3 | Member zu Course mit Position; API und Admin-UI unter `src/app/api/waitlists/*` und `src/app/waitlists/page.tsx` umgesetzt |
 | FZ-026 | Member-Profil anzeigen | 2 | done | docs/spec.md §1 | Eigene Profil- und Vertragsdaten; umgesetzt als Profilseite mit Stammdaten, Tarif und Vertragsinformationen |
 | FZ-027 | Kurskalender fuer Mitglieder anzeigen | 2 | done | docs/spec.md §1, BR3 | Kurse sichtbar nach Tariffenster |
-| FZ-028 | Buchungsfenster pro Tarif anwenden | 2 | validated | docs/spec.md BR3 | Z.B. Premium 14 Tage, Basic 7 Tage |
+| FZ-028 | Buchungsfenster pro Tarif anwenden | 2 | done | docs/spec.md BR3 | Implementiert: Mitgliedersicht filtert Kurse nach Tariffenster; Buchungen werden serverseitig nur innerhalb des erlaubten Fensters akzeptiert. |
 | FZ-029 | Kursdetails mit Kapazitaet anzeigen | 2 | validated | docs/spec.md §1, §2.1 | Kurs, Trainer, Raum, Zeiten, freie Plaetze |
 | FZ-030 | Kursbuchung durch Mitglieder | 2 | validated | docs/spec.md §1, §3 | Member -> Course ueber `Booking` |
 | FZ-031 | Monatslimit fuer aktive Buchungen zaehlen | 2 | validated | docs/spec.md BR1 | Laufender Kalendermonat |

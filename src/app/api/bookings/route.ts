@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isCourseWithinBookingWindow } from "@/lib/booking-window";
 
 type CreateBookingBody = {
   memberId?: string;
@@ -29,14 +30,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Pflichtfelder fehlen" }, { status: 400 });
   }
 
-  const member = await prisma.member.findUnique({ where: { id: memberId }, select: { id: true } });
+  const member = await prisma.member.findUnique({
+    where: { id: memberId },
+    include: { membershipTier: true }
+  });
   if (!member) {
     return NextResponse.json({ error: "Mitglied nicht gefunden" }, { status: 404 });
   }
 
-  const course = await prisma.course.findUnique({ where: { id: courseId }, select: { id: true } });
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: { id: true, startTime: true }
+  });
   if (!course) {
     return NextResponse.json({ error: "Kurs nicht gefunden" }, { status: 404 });
+  }
+
+  const isVisibleForMember = isCourseWithinBookingWindow(
+    course.startTime,
+    member.membershipTier.bookingWindowDays
+  );
+
+  if (!isVisibleForMember) {
+    return NextResponse.json(
+      {
+        error: `Buchung nicht möglich. Dein Buchungsfenster umfasst nur die nächsten ${member.membershipTier.bookingWindowDays} Tage.`
+      },
+      { status: 403 }
+    );
   }
 
   try {

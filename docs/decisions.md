@@ -259,6 +259,31 @@ FZ-020 wird als vollständiger Admin-CRUD für das Prisma-Modell `Room` umgesetz
 
 ### Nächste Schritte
 
+---
+
+## 2026-07-08 - FZ-028 Buchungsfenster pro Tarif umgesetzt
+
+**Kontext:** Gemäss `docs/spec.md` BR3 darf die Sichtbarkeit von Kursen und die Möglichkeit zur Buchung abhängig vom Tarif des Mitglieds variieren. Die Umsetzung musste deshalb zentral und nachvollziehbar erfolgen, statt nur in der UI nachzubilden.
+
+### Entscheidung
+
+FZ-028 wird als serverseitige, tarifbasierte Buchungsfenster-Logik umgesetzt. Die Regel wird zentral in `src/lib/booking-window.ts` definiert und von den relevanten API-Routen verwendet:
+
+- Die Kursliste für Mitglieder wird nur noch innerhalb des von `MembershipTier.bookingWindowDays` definierten Fensters zurückgegeben.
+- Neue Buchungen werden nur noch akzeptiert, wenn der Kurs zum aktuellen Zeitpunkt noch im erlaubten Fenster liegt.
+- Die Profilseite nutzt dieselbe Logik, damit die sichtbare Kursübersicht für Mitglieder konsistent bleibt.
+
+### Alternativen verworfen
+
+- Nur clientseitige Filterung in der Profilseite: zu wenig robust, weil Buchungen weiterhin über die API möglich gewesen wären.
+- Separate Regeln in jeder UI-Komponente: erhöht Redundanz und Risiko von Inkonsistenzen.
+
+### Konsequenzen
+
+- Die Buchungsfenster-Regel ist jetzt fachlich korrekt und zentral gepflegt.
+- Mitglieder können keine Kurse mehr außerhalb ihres Tarif-Fensters buchen.
+- Die Lösung lässt sich später leicht auf weitere Member- oder Admin-Flows erweitern.
+
 - Implementierung einer Admin-CRUD-API und einfacher Admin-UI fuer `TrainerQualification` (FZ-019).
 - Serverseitige Erzwingung der Qualifikation beim Anlegen von Kursen (FZ-023) bereits in Planung.
 

@@ -43,15 +43,21 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const loadProfile = async () => {
-      const [profileResponse, coursesResponse] = await Promise.all([
-        fetch("/api/profile"),
-        fetch("/api/courses")
-      ]);
-
+      const profileResponse = await fetch("/api/profile");
       const profileData = await profileResponse.json();
+      const memberData = profileData.member ?? null;
+
+      setMember(memberData);
+
+      if (!memberData) {
+        setCourses([]);
+        setLoading(false);
+        return;
+      }
+
+      const coursesResponse = await fetch(`/api/courses?memberId=${memberData.id}`);
       const coursesData = await coursesResponse.json();
 
-      setMember(profileData.member ?? null);
       setCourses(coursesData.courses ?? []);
       setLoading(false);
     };
@@ -60,19 +66,8 @@ export default function ProfilePage() {
   }, []);
 
   const visibleCourses = useMemo(() => {
-    if (!member) return [];
-
-    const now = new Date();
-    const bookingWindowEnd = new Date(now.valueOf());
-    bookingWindowEnd.setDate(now.getDate() + member.membershipTier.bookingWindowDays);
-
-    return courses
-      .filter((course) => {
-        const start = new Date(course.startTime);
-        return start >= now && start <= bookingWindowEnd;
-      })
-      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-  }, [courses, member]);
+    return [...courses].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  }, [courses]);
 
   return (
     <main className="shell">
