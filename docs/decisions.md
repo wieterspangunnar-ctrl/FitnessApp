@@ -233,6 +233,27 @@ Die Zuordnung wird als eigenstaendiges Prisma-Modell `TrainerQualification` umge
 - Erfordert noch Admin-CRUD und UI-Filter (siehe FZ-019, FZ-022) damit Lisa Qualifikationen pflegen und der Trainer-Dropdown in der Kursplanung korrekt gefiltert wird.
 - Operativ: Bei Schema-Änderungen `prisma migrate` / `prisma generate` ausführen; lokale DB-Migrationen pruefen bevor auf Produktionsdaten umgestellt wird.
 
+## 2026-07-08 - FZ-032 Tariflimit-Blockade für Buchungen umgesetzt
+
+**Kontext:** Gemäß BR1 soll eine neue Kursbuchung verhindert werden, sobald ein Mitglied im aktuellen Kalendermonat das monatliche Buchungslimit seines Tarifplans erreicht hat. Diese Regel ist für Basic-Tarife besonders relevant, wo das Limit typischerweise bei 5 liegt.
+
+### Entscheidung
+
+FZ-032 wird als serverseitige Prüfung in der Buchungs-API umgesetzt. Vor dem Anlegen einer Buchung wird das aktuelle Monatsbuchungskonto des Mitglieds ermittelt und mit dem `maxCoursesPerMonth`-Wert des zugehörigen Tarifs verglichen. Sobald das Limit erreicht ist, wird die Buchung mit einem klaren Fehler abgewiesen und kein weiterer Buchungs- oder Wartlisten-Eintrag erzeugt.
+
+### Alternativen verworfen
+
+- Nur clientseitige Blockade in der UI: zu wenig robust, weil Buchungen auch über API- oder zukünftige Frontends möglich wären.
+- Keine zentrale Prüfungslogik: die Regel wäre an mehreren Stellen dupliziert und schwerer wartbar.
+
+### Konsequenzen
+
+- Buchungen sind jetzt konsistent an die Tariflimits gebunden.
+- Die Regel lässt sich leicht erweitern, wenn später zusätzliche Tariflogiken oder Sonderfälle hinzukommen.
+- Die Umsetzung ist bewusst klein gehalten und nutzt die bestehende Prisma-/Next.js-Architektur weiter.
+
+---
+
 ## 2026-07-06 - FZ-020 Admin-CRUD fuer Räume umgesetzt
 
 **Kontext:** Lisa braucht eine Admin-Sicht fuer Räume, damit Kurstermine einem eindeutigen Raum zugeordnet werden können. Die Raumverwaltung muss Raumnamen speichern, ändern und löschen können.

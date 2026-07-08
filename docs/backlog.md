@@ -63,7 +63,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-029 | Kursdetails mit Kapazitaet anzeigen | 2 | done | docs/spec.md §1, §2.1 | Implementiert: API liefert freie Plätze; Admin- und Member-Ansicht zeigen Kapazität. |
 | FZ-030 | Kursbuchung durch Mitglieder | 2 | done | docs/spec.md §1, §3 | Backend: POST `/api/bookings` erstellt `Booking` oder `Waitlist` bei voller Belegung |
 | FZ-031 | Monatslimit fuer aktive Buchungen zaehlen | 2 | done | docs/spec.md BR1 | Laufender Kalendermonat |
-| FZ-032 | Buchung bei erreichtem Tariflimit blockieren | 2 | validated | docs/spec.md BR1 | Basic-Limit typischerweise 5 |
+| FZ-032 | Buchung bei erreichtem Tariflimit blockieren | 2 | done | docs/spec.md BR1 | Implementiert in der Booking-API über eine zentrale Tariflimit-Prüfung; Basic-Limit typischerweise 5 |
 | FZ-033 | Kursstornierung durch Mitglieder | 2 | validated | docs/spec.md §1, BR4 | Stornieren statt loeschen |
 | FZ-034 | Rechtzeitige Stornierung als `CANCELLED_TIMELY` speichern | 2 | validated | docs/spec.md BR4 | Frist >= 2 Stunden |
 | FZ-035 | Spaete Stornierung als `CANCELLED_LATE` speichern | 2 | validated | docs/spec.md BR4 | Frist < 2 Stunden |

@@ -2,6 +2,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isCourseWithinBookingWindow } from "@/lib/booking-window";
+import { hasReachedMonthlyBookingLimit } from "@/lib/booking-limit";
 
 type CreateBookingBody = {
   memberId?: string;
@@ -117,7 +118,12 @@ export async function POST(request: Request) {
           }
         });
 
-        if (activeBookingsThisMonth >= member.membershipTier.maxCoursesPerMonth) {
+        if (
+          hasReachedMonthlyBookingLimit(
+            activeBookingsThisMonth,
+            member.membershipTier.maxCoursesPerMonth
+          )
+        ) {
           throw {
             code: "MONTHLY_LIMIT_REACHED",
             limit: member.membershipTier.maxCoursesPerMonth
