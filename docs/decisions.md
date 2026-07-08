@@ -307,6 +307,20 @@ Wesentliche Implementationsdatei: `src/app/api/bookings/[id]/route.ts` (DELETE-H
 - Offen: Gebühren (`5,00 €` für Basic/Plus bei späten Stornos) sind noch nicht automatisch auf Kundenkonten gebucht. Weiteres Ticket empfohlen (FZ-044).
 - Offen: Nachrücken von Wartelisten bei rechtzeitiger Stornierung (FZ-039) ist nicht Teil dieses Commits und sollte als nächster Schritt ergänzt werden.
 
+## 2026-07-08 - FZ-034 Rechtzeitige Stornierung (`CANCELLED_TIMELY`) umgesetzt
+
+**Kontext:** Gemäß `docs/spec.md` BR4 müssen Stornierungen, die mindestens 2 Stunden vor Kursbeginn erfolgen, als `CANCELLED_TIMELY` persistiert werden.
+
+### Entscheidung
+
+Die Logik zur Unterscheidung zwischen `CANCELLED_TIMELY` und `CANCELLED_LATE` wurde in der neuen Route `DELETE /api/bookings/[id]` implementiert. Bei >= 2 Stunden bis Kursbeginn wird `CANCELLED_TIMELY` gesetzt; bei < 2 Stunden greift der Tarif-Fall (`hasFreeLateCancellation`) sonst `CANCELLED_LATE`.
+
+### Konsequenzen
+
+- Positiv: Die Stornierungs-Status sind auditierbar und entsprechen der Spezifikation.
+- Offen: Gebührenbuchung für späte Stornos (FZ-044) und Nachrücken aus Wartelisten (FZ-039) sind separat zu implementieren.
+
+
 
 ---
 
