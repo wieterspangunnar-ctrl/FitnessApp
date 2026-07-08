@@ -422,3 +422,26 @@ FZ-015 wird als vollständiges Admin-CRUD umgesetzt. Die Umsetzung umfasst:
 - Positiv: Die Datenbasis für spätere Sperren und Vertragswarnungen ist damit lückenlos vorhanden.
 - Operativ: Für weitere Features wie Buchungslimits, No-Show-Sperren und Vertragsende-Reminder kann `Member.contractEndDate` nun zuverlässig genutzt werden.
 
+## 2026-07-08 - FZ-025 Wartelisten-Entitaet als Admin-CRUD umgesetzt
+
+**Kontext:** Die Spezifikation verlangt eine persistente Darstellung von Wartelisten-Einträgen für Kurse (`docs/spec.md §2.1, §3`). FZ-025 soll es ermöglichen, Mitglieder für volle Kurse in eine Warteliste aufzunehmen und deren Positionen verwaltbar zu machen.
+
+### Entscheidung
+
+FZ-025 wird als eigene Wartelisten-Funktion umgesetzt. Technische Eckpunkte:
+- Neue API-Routen unter `src/app/api/waitlists/route.ts` und `src/app/api/waitlists/[id]/route.ts` für `GET`, `POST`, `PUT` und `DELETE`.
+- Neue Admin-UI unter `src/app/waitlists/page.tsx`, um Wartelisten-Einträge anzulegen, anzuzeigen und zu löschen.
+- Die Warteliste ist an bestehende `Member`-, `Course`-, `CourseType`-, `Room`- und `Trainer`-Daten angebunden, damit Lisa den Kontext direkt im Admin-UI sieht.
+- Die Startseite wurde um einen direkten Einstieg zu Buchungen und Wartelisten ergänzt.
+
+### Alternativen verworfen
+
+- Nur das Datenmodell ohne API/UI: zu wenig sofort nutzbarer Mehrwert für Lisa.
+- Wartelisten nur indirekt über Buchungslogik abbilden: erschwert spätere Verwaltung und Nachrück-Logik.
+
+### Konsequenzen
+
+- Positiv: Wartelisten-Einträge sind jetzt explizit im System gespeichert und verwaltbar.
+- Positiv: Die Basis ist gelegt für spätere Business Rules wie automatisches Nachrücken bei Stornierung und Benachrichtigungen.
+- Operativ: Die aktuelle Umsetzung ist bewusst schlank und fokussiert auf die Datenhaltung und Admin-Verwaltung; die eigentliche Buchungs-/Nachrück-Logik folgt in den nächsten Schritten.
+
