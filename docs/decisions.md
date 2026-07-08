@@ -198,6 +198,22 @@ Was haben wir entschieden?
 
 **Kontext:** Das System braucht eine robuste Zuordnung, welche `Trainer` welche `CourseType` unterrichten dürfen. Diese Information ist Grundlage fuer sichere Kursplanung (BR6) und spätere UI-Filter/Validierungen.
 
+## 2026-07-08 - FZ-027 Kurskalender für Mitglieder im Profil umgesetzt
+
+**Kontext:** Für das Tarifsystem muss ein Mitgliedskurskalender sichtbar sein, der die verfügbaren Kurse entsprechend dem Buchungsfenster des aktuellen Tarifs anzeigt. FZ-027 ist Teil der Member-Funktionalität und soll die Kursübersicht für Mitglieder verfügbar machen.
+
+### Entscheidung
+Die Member-Profilseite wurde um einen kursbasierten Kalender ergänzt. Die Umsetzung nutzt bestehende API-Routen für `profile` und `courses` und filtert Kurse clientseitig nach dem aktuellen Datum sowie `bookingWindowDays` des Mitgliedstarifs.
+
+### Alternativen verworfen
+- Eigene Timeline-/Kalenderkomponente mit externem Paket: Zu großer Aufwand für die MVP-Phase, wenn ein einfacher Listenfilter den Bedarf deckt.
+- Serverseitige Vorausberechnung in der Profil-API: Gute Alternative, aber für FZ-027 war der Fokus auf kleine Änderungen und Wiederverwendung bestehender Endpunkte.
+
+### Konsequenzen
+- Mitglieder sehen nun direkt im Profil einen buchungsfenstersensitiven Kurskalender.
+- Die Lösung bleibt lean und verwendet keine zusätzlichen UI-Bibliotheken.
+- Spätere Features wie direkte Buchung oder Kalenderansicht können auf den vorhandenen `courses`-Daten aufbauen.
+
 ### Entscheidung
 
 Die Zuordnung wird als eigenstaendiges Prisma-Modell `TrainerQualification` umgesetzt (Join-Tabelle). Technische Eckpunkte:

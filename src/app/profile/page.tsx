@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type MembershipTier = {
   id: string;
@@ -10,6 +10,19 @@ type MembershipTier = {
   hasVideoAccess: boolean;
   hasFreeLateCancellation: boolean;
   includedPtSlotsPerMonth: number;
+};
+
+type CourseType = { id: string; name: string };
+type Room = { id: string; name: string };
+type Trainer = { id: string; firstName: string; lastName: string };
+type Course = {
+  id: string;
+  startTime: string;
+  endTime: string;
+  maxParticipants: number;
+  courseType: CourseType;
+  room: Room;
+  trainer: Trainer;
 };
 
 type MemberProfile = {
@@ -25,18 +38,41 @@ type MemberProfile = {
 
 export default function ProfilePage() {
   const [member, setMember] = useState<MemberProfile | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadProfile = async () => {
-      const response = await fetch("/api/profile");
-      const data = await response.json();
-      setMember(data.member ?? null);
+      const [profileResponse, coursesResponse] = await Promise.all([
+        fetch("/api/profile"),
+        fetch("/api/courses")
+      ]);
+
+      const profileData = await profileResponse.json();
+      const coursesData = await coursesResponse.json();
+
+      setMember(profileData.member ?? null);
+      setCourses(coursesData.courses ?? []);
       setLoading(false);
     };
 
     void loadProfile();
   }, []);
+
+  const visibleCourses = useMemo(() => {
+    if (!member) return [];
+
+    const now = new Date();
+    const bookingWindowEnd = new Date(now.valueOf());
+    bookingWindowEnd.setDate(now.getDate() + member.membershipTier.bookingWindowDays);
+
+    return courses
+      .filter((course) => {
+        const start = new Date(course.startTime);
+        return start >= now && start <= bookingWindowEnd;
+      })
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  }, [courses, member]);
 
   return (
     <main className="shell">
@@ -45,7 +81,7 @@ export default function ProfilePage() {
           <p className="eyebrow">FZ-026</p>
           <h1>Mein Profil</h1>
           <p className="intro">
-            Mitglieder sehen hier ihre Stammdaten, ihren Tarif und wichtige Vertragsinformationen in einer übersichtlichen Ansicht.
+            Mitglieder sehen hier ihre Stammdaten, ihren Tarif, ihren Kurskalender und wichtige Vertragsinformationen in einer übersichtlichen Ansicht.
           </p>
         </div>
       </section>
@@ -82,6 +118,33 @@ export default function ProfilePage() {
                 <p><strong>Freie Spätstornierung:</strong> {member.membershipTier.hasFreeLateCancellation ? "Ja" : "Nein"}</p>
                 <p><strong>Freie PT-Slots:</strong> {member.membershipTier.includedPtSlotsPerMonth}</p>
               </div>
+            </div>
+
+            <div className="module-card" style={{ minHeight: "auto" }}>
+              <h3 style={{ marginTop: 0 }}>Kurskalender</h3>
+              <p style={{ marginTop: 0, color: "var(--muted)" }}>
+                Dein Tarif erlaubt Einsicht in Kurse für die nächsten {member.membershipTier.bookingWindowDays} Tage.
+              </p>
+              {visibleCourses.length === 0 ? (
+                <p>Aktuell sind keine Kurse im Buchungsfenster verfügbar.</p>
+              ) : (
+                <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+                  {visibleCourses.map((course) => (
+                    <article key={course.id} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 16 }}>
+                      <h4 style={{ margin: 0 }}>{course.courseType.name}</h4>
+                      <p style={{ margin: "8px 0 0", color: "var(--muted)" }}>
+                        {new Date(course.startTime).toLocaleDateString("de-DE", { dateStyle: "medium", timeStyle: "short" })} – {new Date(course.endTime).toLocaleTimeString("de-DE", { timeStyle: "short" })}
+                      </p>
+                      <p style={{ margin: "8px 0 0", color: "var(--muted)" }}>
+                        Trainer: {course.trainer.firstName} {course.trainer.lastName} · Raum: {course.room.name}
+                      </p>
+                      <p style={{ margin: "8px 0 0", color: "var(--muted)" }}>
+                        Max. Teilnehmer: {course.maxParticipants}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
