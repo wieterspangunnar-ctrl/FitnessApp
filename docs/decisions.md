@@ -280,6 +280,34 @@ FZ-020 wird als vollständiger Admin-CRUD für das Prisma-Modell `Room` umgesetz
 
 ### Nächste Schritte
 
+## 2026-07-08 - FZ-033 Kursstornierung durch Mitglieder implementiert
+
+**Kontext:** Gemäß `docs/spec.md` BR4 sollen Mitglieder Buchungen stornieren können. Statt Buchungen zu löschen, müssen Stornos auditierbar als Statusänderung abgelegt werden (`CANCELLED_TIMELY` / `CANCELLED_LATE`) und die Spätstorno-Regel des Tarifs (`hasFreeLateCancellation`) berücksichtigt werden.
+
+### Entscheidung
+
+Die Stornierung wird serverseitig als neue Route `DELETE /api/bookings/[id]` umgesetzt. Die Route prüft:
+
+- Existenz der Buchung und dass sie `CONFIRMED` ist.
+- verbleibende Zeit bis Kursbeginn; bei < 2 Stunden wird `CANCELLED_LATE` gesetzt, sonst `CANCELLED_TIMELY`.
+- das Flag `membershipTier.hasFreeLateCancellation`: falls gesetzt, wird auch bei <2 Stunden `CANCELLED_TIMELY` gesetzt.
+
+Die Route ändert nur den `status` der `Booking`-Entität (Audit-Trail bleibt erhalten). Gebührenbuchungen und Benachrichtigungen werden in einem separaten Schritt implementiert (siehe Konsequenzen / Nächste Schritte).
+
+Wesentliche Implementationsdatei: `src/app/api/bookings/[id]/route.ts` (DELETE-Handler).
+
+### Alternativen verworfen
+
+- Löschung der Buchung (`DELETE` physisch): verworfen wegen Audit- und Reporting-Anforderungen.
+- Komplettes Gebühren-Handling in dieser Änderung: zurückgestellt, um die Kern-Rücksetzlogik klein und prüfbar zu halten.
+
+### Konsequenzen
+
+- Positiv: Storno-Workflow entspricht `docs/spec.md` BR4 und lässt spätere Nachverrechnung/Reporting zu.
+- Offen: Gebühren (`5,00 €` für Basic/Plus bei späten Stornos) sind noch nicht automatisch auf Kundenkonten gebucht. Weiteres Ticket empfohlen (FZ-044).
+- Offen: Nachrücken von Wartelisten bei rechtzeitiger Stornierung (FZ-039) ist nicht Teil dieses Commits und sollte als nächster Schritt ergänzt werden.
+
+
 ---
 
 ## 2026-07-08 - FZ-029 Kursdetails mit Kapazität sichtbar gemacht
