@@ -1,4 +1,3 @@
-import { Prisma } from "@/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isCourseWithinBookingWindow } from "@/lib/booking-window";
@@ -28,6 +27,31 @@ function parseInteger(value: unknown) {
 
   const parsed = Number(value);
   return Number.isNaN(parsed) ? null : Math.floor(parsed);
+}
+
+async function getCourseCapacityMap() {
+  const confirmedBookings = await prisma.booking.groupBy({
+    by: ["courseId"],
+    where: { status: "CONFIRMED" },
+    _count: { courseId: true }
+  });
+
+  return new Map(confirmedBookings.map((entry) => [entry.courseId, entry._count.courseId]));
+}
+
+function enrichCoursesWithCapacity<T extends { id: string; maxParticipants: number }>(
+  courses: T[],
+  capacityByCourseId: Map<string, number>
+) {
+  return courses.map((course) => {
+    const confirmedBookingCount = capacityByCourseId.get(course.id) ?? 0;
+
+    return {
+      ...course,
+      confirmedBookingCount,
+      availableSpots: Math.max(course.maxParticipants - confirmedBookingCount, 0)
+    };
+  });
 }
 
 async function isTrainerQualifiedForCourse(trainerId: string, courseTypeId: string) {
@@ -66,8 +90,12 @@ export async function GET(request: Request) {
       orderBy: { startTime: "asc" }
     });
 
-    const visibleCourses = courses.filter((course) =>
-      isCourseWithinBookingWindow(course.startTime, member.membershipTier.bookingWindowDays, now)
+    const capacityByCourseId = await getCourseCapacityMap();
+    const visibleCourses = enrichCoursesWithCapacity(
+      courses.filter((course) =>
+        isCourseWithinBookingWindow(course.startTime, member.membershipTier.bookingWindowDays, now)
+      ),
+      capacityByCourseId
     );
 
     return NextResponse.json({ courses: visibleCourses });
@@ -82,7 +110,10 @@ export async function GET(request: Request) {
     orderBy: { startTime: "asc" }
   });
 
-  return NextResponse.json({ courses });
+  const capacityByCourseId = await getCourseCapacityMap();
+  const coursesWithCapacity = enrichCoursesWithCapacity(courses, capacityByCourseId);
+
+  return NextResponse.json({ courses: coursesWithCapacity });
 }
 
 export async function POST(request: Request) {

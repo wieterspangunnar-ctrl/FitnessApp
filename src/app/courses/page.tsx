@@ -14,6 +14,8 @@ type Course = {
   startTime: string;
   endTime: string;
   maxParticipants: number;
+  confirmedBookingCount: number;
+  availableSpots: number;
   courseType: CourseType;
   room: Room;
   trainer: Trainer;
@@ -259,6 +261,9 @@ export default function CoursesPage() {
                     </p>
                     <p style={{ margin: "4px 0 0", color: "var(--muted)" }}>
                       Max. Teilnehmer: {course.maxParticipants}
+                    </p>
+                    <p style={{ margin: "4px 0 0", color: "var(--muted)" }}>
+                      Freie Plätze: {course.availableSpots} / {course.maxParticipants}
                     </p>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>

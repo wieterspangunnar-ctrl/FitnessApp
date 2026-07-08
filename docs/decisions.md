@@ -261,6 +261,27 @@ FZ-020 wird als vollständiger Admin-CRUD für das Prisma-Modell `Room` umgesetz
 
 ---
 
+## 2026-07-08 - FZ-029 Kursdetails mit Kapazität sichtbar gemacht
+
+**Kontext:** Die Kursübersichten mussten für Lisa und Mitglieder sofort erkennen lassen, wie viele freie Plätze noch verfügbar sind. Die Spezifikation verlangt dazu eine sichtbare Kapazitätsdarstellung, ohne dafür ein neues Datenmodell oder ein separates Backend-Modul aufzubauen.
+
+### Entscheidung
+
+FZ-029 wird als kleine, datenbasierte Erweiterung der bestehenden Kurs-API umgesetzt. Die API zählt bestätigte Buchungen pro Kurs und berechnet daraus `availableSpots` für jedes Kurs-Objekt. Diese Informationen werden in der Admin-Kursübersicht und in der Member-Profil-Ansicht angezeigt.
+
+### Alternativen verworfen
+
+- Separate Kapazitäts-Engine oder eigenes Datenmodell: zu viel Aufwand für das MVP und nicht nötig, weil die Buchungsdaten bereits im bestehenden Schema vorliegen.
+- Nur Anzeige in der Admin-Ansicht: würde die Anforderung an Mitglieder nicht vollständig abbilden.
+
+### Konsequenzen
+
+- Lisa sieht in der Kursverwaltung direkt, welche Kurse noch freie Plätze haben.
+- Mitglieder erhalten in ihrem Profil ebenfalls einen schnellen Überblick über die verfügbare Kapazität.
+- Die Lösung bleibt klein, konsistent mit dem bestehenden Prisma/Next.js-Ansatz und lässt sich später um weitere Buchungszustände erweitern.
+
+---
+
 ## 2026-07-08 - FZ-028 Buchungsfenster pro Tarif umgesetzt
 
 **Kontext:** Gemäss `docs/spec.md` BR3 darf die Sichtbarkeit von Kursen und die Möglichkeit zur Buchung abhängig vom Tarif des Mitglieds variieren. Die Umsetzung musste deshalb zentral und nachvollziehbar erfolgen, statt nur in der UI nachzubilden.
