@@ -259,6 +259,31 @@ FZ-019 wurde als neues Admin-Modul umgesetzt. Technische Eckpunkte:
 - Die Startseite (`src/app/page.tsx`) wurde um einen Verweis auf das neue Modul ergänzt.
 - `docs/backlog.md` wurde auf `done` gesetzt für FZ-019.
 
+---
+
+## 2026-07-08 - FZ-026 Mitgliederprofil fuer den Member-Bereich umgesetzt
+
+**Kontext:** Gemäss `docs/spec.md` soll ein Mitglied seine eigenen Profil- und Vertragsdaten einsehen können. Im bisherigen Stand war nur die Admin-Verwaltung von Mitgliedern vorhanden, aber keine passende Member-sichtbare Profilansicht.
+
+### Entscheidung
+
+FZ-026 wird als einfache Profilseite im Member-Bereich umgesetzt. Die Umsetzung umfasst:
+
+- Neue Route `src/app/profile/page.tsx` mit einer übersichtlichen Profilansicht für Stammdaten, Tarif und Vertragsdaten.
+- Neue API-Route `src/app/api/profile/route.ts`, die ein vorhandenes Mitglied inklusive Tarifinformationen bereitstellt.
+- Verlinkung der neuen Profilseite aus der Startseite über `src/app/page.tsx`.
+
+### Alternativen verworfen
+
+- Nur die vorhandene Admin-Mitgliederverwaltung erweitern: würde die Anforderung aus `docs/spec.md` nicht erfüllen, weil das Profil für das Mitglied selbst sichtbar sein muss.
+- Ein separates Auth-System oder Rollenmodell für die Profilseite einführen: für den aktuellen MVP-Stand zu aufwendig und nicht Teil der bestehenden Foundation.
+
+### Konsequenzen
+
+- Mitglieder können ihre Kerninformationen jetzt direkt im Produkt einsehen.
+- Die Basis für spätere Member-spezifische Funktionen wie Buchungen, Stornierungen und Vertragswarnungen ist erweitert.
+- Die Umsetzung bleibt bewusst klein und fokussiert auf die spezifizierte Anforderung aus FZ-026.
+
 ## 2026-07-06 - FZ-023 Trainerqualifikation serverseitig erzwungen
 
 **Kontext:** Die Kursplanung hatte bereits eine Filterung im UI, aber keine technische Sicherheitsbarriere. Ein ungültiger Trainer/Kursart-Mix konnte damit trotzdem über die API erzeugt oder geändert werden.
