@@ -60,23 +60,84 @@ export async function POST(request: Request) {
     );
   }
 
+  // Stelle sicher, dass nur aktive Mitglieder buchen
+  if (member.status !== "ACTIVE") {
+    return NextResponse.json({ error: "Mitglied nicht aktiv" }, { status: 403 });
+  }
+
+  // Lade Kurs-Metadaten (Kapazität)
+  const fullCourse = await prisma.course.findUnique({
+    where: { id: courseId },
+    select: { id: true, maxParticipants: true }
+  });
+
+  if (!fullCourse) {
+    return NextResponse.json({ error: "Kurs nicht gefunden" }, { status: 404 });
+  }
+
   try {
-    const booking = await prisma.booking.create({
-      data: {
-        memberId,
-        courseId
-      },
-      include: {
-        member: true,
-        course: { include: { courseType: true, room: true, trainer: true } }
+    const result = await prisma.$transaction(async (tx) => {
+      const confirmedCount = await tx.booking.count({
+        where: { courseId, status: "CONFIRMED" }
+      });
+
+      const existingBooking = await tx.booking.findFirst({
+        where: { memberId, courseId }
+      });
+      if (existingBooking) {
+        throw { code: "ALREADY_BOOKED" };
       }
+
+      const existingWait = await tx.waitlist.findFirst({
+        where: { memberId, courseId }
+      });
+      if (existingWait) {
+        throw { code: "ALREADY_WAITLISTED" };
+      }
+
+      if (confirmedCount < fullCourse.maxParticipants) {
+        const booking = await tx.booking.create({
+          data: { memberId, courseId },
+          include: { member: true, course: { include: { courseType: true, room: true, trainer: true } } }
+        });
+
+        return { type: "booking", payload: booking };
+      }
+
+      // Kurs voll -> Waitlist platzieren
+      const lastPos = await tx.waitlist.findFirst({
+        where: { courseId },
+        orderBy: { position: "desc" },
+        select: { position: true }
+      });
+
+      const position = lastPos ? lastPos.position + 1 : 1;
+
+      const wait = await tx.waitlist.create({
+        data: { memberId, courseId, position },
+        include: { member: true, course: { include: { courseType: true, room: true, trainer: true } } }
+      });
+
+      return { type: "waitlist", payload: wait };
     });
 
-    return NextResponse.json(booking, { status: 201 });
+    if (result.type === "booking") {
+      return NextResponse.json(result.payload, { status: 201 });
+    }
+
+    return NextResponse.json(result.payload, { status: 201 });
   } catch (error) {
-    const e = error as Prisma.PrismaClientKnownRequestError;
+    const e = error as any;
     if (e && e.code === "P2002") {
-      return NextResponse.json({ error: "Buchung existiert bereits" }, { status: 409 });
+      return NextResponse.json({ error: "Ein Eintrag existiert bereits" }, { status: 409 });
+    }
+
+    if (e && e.code === "ALREADY_BOOKED") {
+      return NextResponse.json({ error: "Mitglied hat diesen Kurs bereits gebucht" }, { status: 409 });
+    }
+
+    if (e && e.code === "ALREADY_WAITLISTED") {
+      return NextResponse.json({ error: "Mitglied steht bereits auf der Warteliste" }, { status: 409 });
     }
 
     return NextResponse.json({ error: "Buchung konnte nicht erstellt werden" }, { status: 500 });

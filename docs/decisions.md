@@ -532,3 +532,33 @@ FZ-025 wird als eigene Wartelisten-Funktion umgesetzt. Technische Eckpunkte:
 - Positiv: Die Basis ist gelegt für spätere Business Rules wie automatisches Nachrücken bei Stornierung und Benachrichtigungen.
 - Operativ: Die aktuelle Umsetzung ist bewusst schlank und fokussiert auf die Datenhaltung und Admin-Verwaltung; die eigentliche Buchungs-/Nachrück-Logik folgt in den nächsten Schritten.
 
+## 2026-07-08 - FZ-030 Kursbuchung durch Mitglieder (Backend-Implementierung)
+
+**Kontext:** Mitglieder sollen Kurse buchen können; bei voller Belegung soll eine Warteliste entstehen. Die Operation muss race-condition-sicher und konsistent mit bestehenden Business Rules (Buchungsfenster, Mitgliedsstatus, Kapazität) sein.
+
+### Entscheidung
+
+Die POST-Route `/api/bookings` wurde erweitert, sodass die Serverlogik nun:
+
+- Mitglieds- und Tarifdaten prüft (Buchungsfenster via `bookingWindowDays` bleibt aktiv).
+- Nur `ACTIVE`-Mitglieder Buchungen anlegen dürfen (sonst 403).
+- In einer Prisma-Transaction ermittelt wird, ob noch Kapazität vorhanden ist; bei freiem Platz wird ein `Booking` angelegt, sonst ein `Waitlist`-Eintrag mit korrekter `position`.
+- Doppelte Buchungs- oder Wartelisten-Einträge erkannt und mit konsistenten Fehlerantworten behandelt werden.
+
+Wesentliche Änderung: `src/app/api/bookings/route.ts` (POST-Handler) implementiert die atomare Logik für Booking vs. Waitlist.
+
+### Alternativen verworfen
+
+- Nur clientseitige Lösung: nicht race-condition-sicher.
+- Einfaches `count` + `create` ohne Transaction: riskant bei parallelen Anfragen.
+
+### Konsequenzen
+
+- Positiv: Verhindert Überbuchungen und wahrt Business Rules serverseitig.
+- Offene Folgeaufgaben: Frontend-UI für Wartelisten-Feedback, Notification-Workflows beim Nachrücken, und Tests gegen Rennbedingungen.
+
+### Aktion
+
+- Änderung wurde angewendet und `docs/backlog.md` für FZ-030 auf `done` gesetzt.
+
+
