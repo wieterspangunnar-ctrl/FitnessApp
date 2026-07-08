@@ -350,6 +350,36 @@ FZ-013 wird als vollständige Admin-CRUD-Funktion umgesetzt. Der Prisma-Client n
 - Risiken: Die Raumverwaltung bleibt aktuell einfach gehalten; zusätzliche Validierung für Raumnamen und Konfliktbehandlung kann später ergänzt werden.
 - Operativ: Nach Änderungen an `Room` im Prisma-Schema sollte `prisma generate` im lokalen Setup sichergestellt werden.
 
+## 2026-07-08 - FZ-024 `Booking`-Entitaet und einfache Booking-API eingefuehrt
+
+**Kontext:** Die Spezifikation verlangt eine persistente Abbildung von Kursbuchungen (`docs/spec.md §2.1, §3`). FZ-024 zielt darauf ab, Member-Kurs-Buchungen mit Status und Zeitstempel zu erfassen, um darauffolgende Features (Warteliste, Storno-Logik, No-Show, Monatslimits) aufzubauen.
+
+### Entscheidung
+
+Die Entscheidung ist, die `Booking`-Entitaet als Prisma-Modell zu nutzen (bereits im Schema vorhanden) und eine schlanke API zu ergänzen: `src/app/api/bookings/route.ts` mit `GET` (Liste) und `POST` (Buchung anlegen). Technische Eckpunkte:
+
+- Prisma-Model: `Booking` mit `id`, `memberId`, `courseId`, `status: BookingStatus` (Default: `CONFIRMED`) und `bookedAt` (`@default(now())`). Unique-Constraint `@@unique([memberId, courseId])` verhindert doppelte Buchungen.
+- API: `POST /api/bookings` validiert Member und Course-Existenz, legt die Booking an und behandelt Unique-Constraint-Fehler (Prisma `P2002` → 409 Conflict).
+- API: `GET /api/bookings` liefert Bookings inklusive `member` und `course` (inkl. `courseType`, `room`, `trainer`) sortiert nach `bookedAt`.
+
+### Alternativen verworfen
+
+- Erst UI bauen und API danach: Verworfen, weil eine kleine API früh nützliche Integrations- und Testpunkte liefert.
+- Externen Buchungsservice auslagern: Zu komplex für MVP/Solo-Workflow.
+
+### Konsequenzen
+
+- Positiv: Basisfunktionalität zum Anlegen und Auflisten von Buchungen ist vorhanden; schnelle Integration in Admin- und Member-Views möglich.
+- Limitation: Wichtige Business-Rules sind noch nicht serverseitig implementiert (Kapazitätscheck, Buchungsfenster pro Tarif, Monatslimits, automatische Wartelisten-Logik, Stornofristen). Diese stehen als nächste Schritte im Backlog (FZ-030..FZ-039, FZ-031..FZ-036).
+- Operativ: Falls das Prisma-Schema in Zukunft angepasst wird, ist nach Änderungen `prisma migrate`/`prisma generate` lokal auszuführen. Die aktuelle Änderung betraf nur die Server-API-Datei `src/app/api/bookings/route.ts` und `docs/backlog.md`.
+
+### Nächste Schritte
+
+- Serverseitige Regeln implementieren: Kapazitätsprüfung vor Anlegen, Monatslimitprüfung, und differenzierte Stornierungs-Statusänderungen.
+- Wartelisten-Integration: Automatisches Nachrücken und Notification-Trigger.
+- End-to-end Tests für Race-Conditions bei parallelen Buchungsversuchen (siehe FZ-078).
+
+
 ## 2026-07-06 - FZ-014 `Course`-Entitaet und Admin-CRUD umgesetzt
 
 **Kontext:** Das System hatte bereits `CourseType`, `Trainer`, und `Room` als Stammdaten, aber noch keine produktive Kursplanung für Lisa. Für FZ-014 muss ein Kurstermin mit Kursart, Start/Ende, Kapazität, Raum und Trainer administrierbar sein.

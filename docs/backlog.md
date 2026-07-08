@@ -55,7 +55,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 
 | ID | Name | Phase | Status | Quelle | Notiz |
 |----|------|-------|--------|--------|-------|
-| FZ-024 | `Booking`-Entitaet modellieren | 2 | validated | docs/spec.md §2.1, §3 | Member zu Course mit Status und `booked_at` |
+| FZ-024 | `Booking`-Entitaet modellieren | 2 | done | docs/spec.md §2.1, §3 | Member zu Course mit Status und `booked_at` — API: src/app/api/bookings/route.ts |
 | FZ-025 | `Waitlist`-Entitaet modellieren | 2 | validated | docs/spec.md §2.1, §3 | Member zu Course mit Position |
 | FZ-026 | Member-Profil anzeigen | 2 | validated | docs/spec.md §1 | Eigene Profil- und Vertragsdaten |
 | FZ-027 | Kurskalender fuer Mitglieder anzeigen | 2 | validated | docs/spec.md §1, BR3 | Kurse sichtbar nach Tariffenster |
