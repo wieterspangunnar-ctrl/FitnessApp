@@ -467,6 +467,30 @@ Die Entscheidung ist, die `Booking`-Entitaet als Prisma-Modell zu nutzen (bereit
 - End-to-end Tests für Race-Conditions bei parallelen Buchungsversuchen (siehe FZ-078).
 
 
+## 2026-07-08 - FZ-031 Monatslimit für aktive Buchungen implementiert
+
+**Kontext:** Die Spezifikation verlangt ein monatliches Limit für aktive Kursbuchungen im laufenden Kalendermonat (`docs/spec.md BR1`). Basic- und Plus-Tarife nutzen `MembershipTier.maxCoursesPerMonth`, Premium bleibt unbegrenzt bei `null`.
+
+### Entscheidung
+
+FZ-031 wird serverseitig in der Booking-API umgesetzt. Technische Eckpunkte:
+
+- `src/app/api/bookings/route.ts` ergänzt eine Limitprüfung vor dem Erstellen eines neuen `Booking`.
+- Für `member.membershipTier.maxCoursesPerMonth != null` wird die Anzahl der `CONFIRMED`-Buchungen im aktuellen Monat gezählt.
+- Ist das Limit erreicht, wird die Buchung mit einem 403-Fehler abgelehnt und eine klare Fehlermeldung zurückgegeben.
+- Die Prüfung findet innerhalb einer Prisma-Transaktion statt, um Mehrfachbuchungen und Limit-Überschreitungen konsistent zu verhindern.
+
+### Alternativen verworfen
+
+- Limit allein im UI anzeigen: Verworfen, weil die Regelserverseitig gelten muss, um Manipulation zu verhindern.
+- Monatslimit nur bei Kursanzeige prüfen: Verworfen, da sonst direkte API-Aufrufe die Regel umgehen könnten.
+
+### Konsequenzen
+
+- Positiv: Das System schützt Member vor Überschreitung ihres Tariflimits und erfüllt BR1 aus der Spezifikation.
+- Risiko: Jahreswechsel-/Monatswechsel-Logik muss sauber bleiben; aktuell wird der Kalendermonat auf Basis des Serverdatums gewählt.
+- Operativ: Bei Änderungen am `MembershipTier`-Modell oder am `Booking`-Status sollten Tests für Grenzfälle (z.B. Buchung in neuem Monat, frühere Buchungen) ergänzt werden.
+
 ## 2026-07-06 - FZ-014 `Course`-Entitaet und Admin-CRUD umgesetzt
 
 **Kontext:** Das System hatte bereits `CourseType`, `Trainer`, und `Room` als Stammdaten, aber noch keine produktive Kursplanung für Lisa. Für FZ-014 muss ein Kurstermin mit Kursart, Start/Ende, Kapazität, Raum und Trainer administrierbar sein.

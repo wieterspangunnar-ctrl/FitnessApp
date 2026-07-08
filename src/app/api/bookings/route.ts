@@ -8,6 +8,13 @@ type CreateBookingBody = {
   courseId?: string;
 };
 
+function getCurrentMonthWindow(now: Date) {
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  return { startOfMonth, startOfNextMonth };
+}
+
 export async function GET() {
   const bookings = await prisma.booking.findMany({
     include: {
@@ -95,6 +102,29 @@ export async function POST(request: Request) {
         throw { code: "ALREADY_WAITLISTED" };
       }
 
+      if (member.membershipTier.maxCoursesPerMonth != null) {
+        const { startOfMonth, startOfNextMonth } = getCurrentMonthWindow(new Date());
+        const activeBookingsThisMonth = await tx.booking.count({
+          where: {
+            memberId,
+            status: "CONFIRMED",
+            course: {
+              startTime: {
+                gte: startOfMonth,
+                lt: startOfNextMonth
+              }
+            }
+          }
+        });
+
+        if (activeBookingsThisMonth >= member.membershipTier.maxCoursesPerMonth) {
+          throw {
+            code: "MONTHLY_LIMIT_REACHED",
+            limit: member.membershipTier.maxCoursesPerMonth
+          };
+        }
+      }
+
       if (confirmedCount < fullCourse.maxParticipants) {
         const booking = await tx.booking.create({
           data: { memberId, courseId },
@@ -138,6 +168,13 @@ export async function POST(request: Request) {
 
     if (e && e.code === "ALREADY_WAITLISTED") {
       return NextResponse.json({ error: "Mitglied steht bereits auf der Warteliste" }, { status: 409 });
+    }
+
+    if (e && e.code === "MONTHLY_LIMIT_REACHED") {
+      return NextResponse.json(
+        { error: `Du hast das Monatslimit von ${e.limit} aktiven Kursbuchungen erreicht.` },
+        { status: 403 }
+      );
     }
 
     return NextResponse.json({ error: "Buchung konnte nicht erstellt werden" }, { status: 500 });
