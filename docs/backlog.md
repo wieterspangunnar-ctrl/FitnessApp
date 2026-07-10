@@ -66,7 +66,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-032 | Buchung bei erreichtem Tariflimit blockieren | 2 | done | docs/spec.md BR1 | Implementiert in der Booking-API über eine zentrale Tariflimit-Prüfung; Basic-Limit typischerweise 5 |
 | FZ-033 | Kursstornierung durch Mitglieder | 2 | done | docs/spec.md §1, BR4 | Stornieren statt loeschen |
 | FZ-034 | Rechtzeitige Stornierung als `CANCELLED_TIMELY` speichern | 2 | done | docs/spec.md BR4 | Frist >= 2 Stunden |
-| FZ-035 | Spaete Stornierung als `CANCELLED_LATE` speichern | 2 | validated | docs/spec.md BR4 | Frist < 2 Stunden |
+| FZ-035 | Spaete Stornierung als `CANCELLED_LATE` speichern | 2 | done | docs/spec.md BR4 | Implementiert: src/app/api/bookings/[id]/route.ts |
 | FZ-036 | Premium-Ausnahme fuer spaete Stornierung anwenden | 2 | validated | docs/spec.md BR4 | `has_free_late_cancellation` |
 | FZ-037 | Wartelistenbeitritt bei vollem Kurs | 2 | validated | docs/spec.md §1, §2.1 | Position vergeben |
 | FZ-038 | Wartelistenpositionen stabil verwalten | 2 | validated | docs/spec.md §2.1, BR2 | Reihenfolge nach `created_at`/Position |

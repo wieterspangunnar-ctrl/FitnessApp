@@ -644,8 +644,31 @@ Wesentliche Änderung: `src/app/api/bookings/route.ts` (POST-Handler) implementi
 - Positiv: Verhindert Überbuchungen und wahrt Business Rules serverseitig.
 - Offene Folgeaufgaben: Frontend-UI für Wartelisten-Feedback, Notification-Workflows beim Nachrücken, und Tests gegen Rennbedingungen.
 
+
 ### Aktion
 
 - Änderung wurde angewendet und `docs/backlog.md` für FZ-030 auf `done` gesetzt.
+
+
+## 2026-07-08 - FZ-035 Späte Stornierung (`CANCELLED_LATE`) umgesetzt
+
+**Kontext:** Gemäß `docs/spec.md` BR4 sollen Stornierungen, die weniger als 2 Stunden vor Kursbeginn erfolgen, als späte Stornierung erkannt und entsprechend als `CANCELLED_LATE` persistiert werden. Premium-Tarife mit `has_free_late_cancellation` sollen hiervon ausgenommen sein.
+
+### Entscheidung
+
+FZ-035 wurde in der bestehenden Buchungs-API als serverseitige Logik implementiert. Die `DELETE /api/bookings/[id]`-Route prüft die verbleibende Zeit bis Kursbeginn und setzt den `Booking.status` auf `CANCELLED_LATE` wenn die Frist < 2 Stunden liegt, es sei denn, das zugehörige `MembershipTier` hat `hasFreeLateCancellation` gesetzt — in diesem Fall wird `CANCELLED_TIMELY` verwendet.
+
+Wesentliche Implementationsdatei: `src/app/api/bookings/[id]/route.ts` (DELETE-Handler).
+
+### Alternativen verworfen
+
+- Physische Löschung der Buchung: verworfen wegen Audit- und Reporting-Anforderungen.
+- Gebührenverarbeitung (5,00 €) direkt in dieser Änderung: zurückgestellt in FZ-044, um die Kern-Status-Logik klein und prüfbar zu halten.
+
+### Konsequenzen
+
+- Positiv: Stornierungen sind nun auditierbar und entsprechen den Business Rules in `docs/spec.md`.
+- Offen: Gebührenbuchung für späte Stornos (FZ-044) und automatisches Nachrücken von Wartelisten (FZ-039) sind noch zu implementieren.
+- Tests für Randfälle (Zeitzonen, exakte 2-Stunden-Grenze) sollten ergänzt werden.
 
 
