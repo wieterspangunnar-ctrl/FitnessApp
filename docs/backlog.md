@@ -68,7 +68,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-034 | Rechtzeitige Stornierung als `CANCELLED_TIMELY` speichern | 2 | done | docs/spec.md BR4 | Frist >= 2 Stunden |
 | FZ-035 | Spaete Stornierung als `CANCELLED_LATE` speichern | 2 | done | docs/spec.md BR4 | Implementiert: src/app/api/bookings/[id]/route.ts |
 | FZ-036 | Premium-Ausnahme fuer spaete Stornierung anwenden | 2 | done | docs/spec.md BR4 | Implementiert in `src/app/api/bookings/[id]/route.ts` mit testbarer Regel in `src/lib/cancellation-status.ts` |
-| FZ-037 | Wartelistenbeitritt bei vollem Kurs | 2 | validated | docs/spec.md §1, §2.1 | Position vergeben |
+| FZ-037 | Wartelistenbeitritt bei vollem Kurs | 2 | done | docs/spec.md §1, §2.1 | Implementiert in `src/app/api/bookings/route.ts`; vergibt die naechste Wartelistenposition |
 | FZ-038 | Wartelistenpositionen stabil verwalten | 2 | validated | docs/spec.md §2.1, BR2 | Reihenfolge nach `created_at`/Position |
 | FZ-039 | Automatisches Nachruecken bei rechtzeitiger Stornierung | 2 | validated | docs/spec.md BR2 | Position 1 wird `CONFIRMED` |
 | FZ-040 | Nachruecker-Benachrichtigung ausloesen | 2 | validated | docs/spec.md BR2 | In-App/E-Mail-Kanal noch technisch entscheiden |

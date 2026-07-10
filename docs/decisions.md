@@ -2,6 +2,25 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-10 - FZ-037 Wartelistenbeitritt bei vollem Kurs direkt in der Buchungs-API umgesetzt
+
+**Kontext:** Gemäss `docs/spec.md` soll ein Mitglied bei voller Kursauslastung nicht einfach scheitern, sondern direkt auf die Warteliste mit der naechsten freien Position gesetzt werden.
+
+### Entscheidung
+
+Die Buchungs-API `POST /api/bookings` erzeugt bei voller Belegung keinen Fehler, sondern legt im selben Transaktionsfluss einen `Waitlist`-Eintrag mit der naechsten `position` an. Die Position wird aus dem hoechsten bestehenden Wartelistenwert des Kurses abgeleitet.
+
+### Alternativen verworfen
+
+- Separate Wartelisten-Anfrage nach einer fehlgeschlagenen Buchung: zu umstaendlich fuer den Member-Flow und fachlich nicht noetig.
+- Position nur im Frontend berechnen: unsicher, weil parallele Buchungen die Reihenfolge verschieben koennen.
+
+### Konsequenzen
+
+- Der Member-Flow bleibt einfach: Buchung starten, bei vollem Kurs automatisch auf Warteliste landen.
+- Die Reihenfolge wird serverseitig bestimmt und bleibt damit konsistent.
+- FZ-038 kann auf dieser Grundlage die stabile Wartelisten-Logik weiter haerten.
+
 ## 2026-07-10 - FZ-036 Premium-Ausnahme fuer spaete Stornierung als zentrale Regel umgesetzt
 
 **Kontext:** Gemäss `docs/spec.md` BR4 muss bei Stornierungen unter 2 Stunden vor Kursbeginn fuer Tarife mit `hasFreeLateCancellation = true` weiterhin `CANCELLED_TIMELY` gesetzt werden, waehrend andere Tarife als `CANCELLED_LATE` gelten.
