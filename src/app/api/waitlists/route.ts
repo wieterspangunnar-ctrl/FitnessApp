@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createWaitlistEntryWithStablePosition } from "@/lib/waitlist-position";
 
 type CreateWaitlistBody = {
   memberId?: string;
@@ -25,7 +26,7 @@ export async function GET() {
         include: { courseType: true, room: true, trainer: true }
       }
     },
-    orderBy: [{ courseId: "asc" }, { position: "asc" }]
+    orderBy: [{ courseId: "asc" }, { position: "asc" }, { createdAt: "asc" }]
   });
 
   return NextResponse.json({ waitlists });
@@ -55,17 +56,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const waitlistEntry = await prisma.waitlist.create({
-      data: {
+    const waitlistEntry = await prisma.$transaction((tx) =>
+      createWaitlistEntryWithStablePosition({
+        tx,
         memberId,
         courseId,
-        position: parsedPosition
-      },
-      include: {
-        member: true,
-        course: { include: { courseType: true, room: true, trainer: true } }
-      }
-    });
+        requestedPosition: parsedPosition
+      })
+    );
 
     return NextResponse.json(waitlistEntry, { status: 201 });
   } catch (error) {

@@ -2,6 +2,28 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-10 - FZ-038 Wartelistenpositionen transaktionssicher stabilisiert
+
+**Kontext:** Nach FZ-037 konnten Wartelisteneintraege zwar angelegt werden, aber Positionsaenderungen und Loeschungen konnten zu Luecken oder Konflikten mit der Unique-Constraint `@@unique([courseId, position])` fuehren. Laut `docs/spec.md` BR2 muss die Reihenfolge stabil bleiben.
+
+### Entscheidung
+
+Die Wartelisten-Positionslogik wird zentral in `src/lib/waitlist-position.ts` gebuendelt und von Booking- sowie Waitlist-API gemeinsam genutzt. Einfuegen, Verschieben und Loeschen laufen transaktional und reindizieren die Positionen pro Kurs lueckenlos auf `1..n`.
+
+Zur kollisionsfreien Umsortierung mit bestehender Unique-Constraint werden bestehende Eintraege temporaer in einen Offset-Bereich verschoben und danach in finaler Reihenfolge zurueckgeschrieben. Bei gleicher Position dient `created_at` als stabiler Tie-Breaker.
+
+### Alternativen verworfen
+
+- Nur „naechste freie Position“ fortfuehren: behebt keine Luecken nach Loeschung und keine konsistente Umordnung.
+- Reindex nur im Frontend: unsicher bei parallelen API-Aufrufen und verletzt serverseitige Datenhoheit.
+- Constraint entfernen und nur logisch sortieren: erhoeht Risiko inkonsistenter Daten und erschwert Nachrueck-Logik.
+
+### Konsequenzen
+
+- Positionsverwaltung ist jetzt in einer wiederverwendbaren, testbaren Domainenlogik gebuendelt.
+- Booking- und Waitlist-Endpunkte verhalten sich konsistent bei voller Auslastung, manuellem Reordering und Loeschen.
+- FZ-039 (automatisches Nachruecken) kann auf einer lueckenlosen, stabilen Warteliste aufbauen.
+
 ## 2026-07-10 - FZ-037 Wartelistenbeitritt bei vollem Kurs direkt in der Buchungs-API umgesetzt
 
 **Kontext:** Gemäss `docs/spec.md` soll ein Mitglied bei voller Kursauslastung nicht einfach scheitern, sondern direkt auf die Warteliste mit der naechsten freien Position gesetzt werden.

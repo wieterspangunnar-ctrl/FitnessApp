@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isCourseWithinBookingWindow } from "@/lib/booking-window";
 import { hasReachedMonthlyBookingLimit } from "@/lib/booking-limit";
+import { createWaitlistEntryWithStablePosition } from "@/lib/waitlist-position";
 
 type CreateBookingBody = {
   memberId?: string;
@@ -141,17 +142,11 @@ export async function POST(request: Request) {
       }
 
       // Kurs voll -> Waitlist platzieren
-      const lastPos = await tx.waitlist.findFirst({
-        where: { courseId },
-        orderBy: { position: "desc" },
-        select: { position: true }
-      });
-
-      const position = lastPos ? lastPos.position + 1 : 1;
-
-      const wait = await tx.waitlist.create({
-        data: { memberId, courseId, position },
-        include: { member: true, course: { include: { courseType: true, room: true, trainer: true } } }
+      const wait = await createWaitlistEntryWithStablePosition({
+        tx,
+        memberId,
+        courseId,
+        requestedPosition: null
       });
 
       return { type: "waitlist", payload: wait };

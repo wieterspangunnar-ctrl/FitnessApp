@@ -10,7 +10,9 @@ test("places members on the waitlist when the course is full", async () => {
     courseFindUnique: prisma.course.findUnique,
     bookingCount: prisma.booking.count,
     bookingFindFirst: prisma.booking.findFirst,
-    waitlistFindFirst: prisma.waitlist.findFirst,
+    waitlistFindMany: prisma.waitlist.findMany,
+    waitlistFindUniqueOrThrow: prisma.waitlist.findUniqueOrThrow,
+    waitlistUpdate: prisma.waitlist.update,
     waitlistCreate: prisma.waitlist.create,
     transaction: prisma.$transaction
   };
@@ -47,7 +49,19 @@ test("places members on the waitlist when the course is full", async () => {
         }
       },
       waitlist: {
-        findFirst: async () => ({ position: 2 }),
+        findMany: async () => [
+          {
+            id: "waitlist-existing-1",
+            position: 1,
+            createdAt: new Date("2026-01-01T10:00:00.000Z")
+          },
+          {
+            id: "waitlist-existing-2",
+            position: 2,
+            createdAt: new Date("2026-01-01T10:05:00.000Z")
+          }
+        ],
+        update: async () => ({ id: "ignored" }),
         create: async ({ data }: { data: { memberId: string; courseId: string; position: number } }) => {
           createdWaitlistData = data;
 
@@ -58,7 +72,16 @@ test("places members on the waitlist when the course is full", async () => {
             member: { id: "member-1" },
             course: { id: "course-1" }
           };
-        }
+        },
+        findUniqueOrThrow: async () => ({
+          id: "waitlist-1",
+          memberId: "member-1",
+          courseId: "course-1",
+          position: 3,
+          createdAt: new Date(),
+          member: { id: "member-1" },
+          course: { id: "course-1" }
+        })
       }
     });
   }) as any;
@@ -79,14 +102,16 @@ test("places members on the waitlist when the course is full", async () => {
     assert.deepEqual(createdWaitlistData, {
       memberId: "member-1",
       courseId: "course-1",
-      position: 3
+      position: 100003
     });
   } finally {
     prisma.member.findUnique = original.memberFindUnique;
     prisma.course.findUnique = original.courseFindUnique;
     prisma.booking.count = original.bookingCount;
     prisma.booking.findFirst = original.bookingFindFirst;
-    prisma.waitlist.findFirst = original.waitlistFindFirst;
+    prisma.waitlist.findMany = original.waitlistFindMany;
+    prisma.waitlist.findUniqueOrThrow = original.waitlistFindUniqueOrThrow;
+    prisma.waitlist.update = original.waitlistUpdate;
     prisma.waitlist.create = original.waitlistCreate;
     prisma.$transaction = original.transaction;
   }
