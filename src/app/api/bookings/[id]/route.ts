@@ -4,6 +4,47 @@ import { getCancellationStatus } from "@/lib/cancellation-status";
 import { deleteWaitlistEntryAndReindex } from "@/lib/waitlist-position";
 import { notificationDispatcher, type WaitlistMoveUpNotificationPayload } from "@/lib/notifications";
 
+const BOOKING_STATUSES = ["CONFIRMED", "CANCELLED_LATE", "CANCELLED_TIMELY", "NO_SHOW"] as const;
+type BookingStatus = (typeof BOOKING_STATUSES)[number];
+
+type UpdateBookingBody = {
+  status?: unknown;
+};
+
+function isBookingStatus(value: unknown): value is BookingStatus {
+  return typeof value === "string" && BOOKING_STATUSES.includes(value as BookingStatus);
+}
+
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const body = (await request.json()) as UpdateBookingBody;
+
+  if (body.status === undefined) {
+    return NextResponse.json({ error: "Status ist erforderlich" }, { status: 400 });
+  }
+
+  if (!isBookingStatus(body.status)) {
+    return NextResponse.json({ error: "Ungültiger Buchungsstatus" }, { status: 400 });
+  }
+
+  try {
+    const booking = await prisma.booking.update({
+      where: { id },
+      data: { status: body.status },
+      include: {
+        member: true,
+        course: {
+          include: { courseType: true, room: true, trainer: true }
+        }
+      }
+    });
+
+    return NextResponse.json(booking);
+  } catch (error) {
+    return NextResponse.json({ error: "Buchung konnte nicht aktualisiert werden" }, { status: 500 });
+  }
+}
+
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 

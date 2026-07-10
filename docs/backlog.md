@@ -1,6 +1,6 @@
 # backlog.md - FitZone
 
-_Stand: 2026-07-03_
+_Stand: 2026-07-10_
 
 _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 
@@ -72,7 +72,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-038 | Wartelistenpositionen stabil verwalten | 2 | done | docs/spec.md §2.1, BR2 | Implementiert: zentrale Reindex-Logik fuer POST/PUT/DELETE in Waitlist- und Booking-API, Reihenfolge stabil nach Position mit `created_at` als Tie-Breaker |
 | FZ-039 | Automatisches Nachruecken bei rechtzeitiger Stornierung | 2 | done | docs/spec.md BR2 | Implementiert in `src/app/api/bookings/[id]/route.ts`; Nachruecker-Logik transaktion und automatisches Reindexen |
 | FZ-040 | Nachruecker-Benachrichtigung ausloesen | 2 | done | docs/spec.md BR2 | Implementiert: Trigger nach erfolgreichem Nachruecken in `src/app/api/bookings/[id]/route.ts` ueber `src/lib/notifications.ts` |
-| FZ-041 | Admin kann alle Kursbuchungen steuern | 2 | validated | docs/spec.md §1 | Buchungen ueber Kontrollzentrum verwalten |
+| FZ-041 | Admin kann alle Kursbuchungen steuern | 2 | done | docs/spec.md §1 | Implementiert: Admin-UI fuer Buchung anlegen/stornieren/Status setzen in `src/app/bookings/page.tsx` und Status-Update-API in `src/app/api/bookings/[id]/route.ts` |
 
 ### Phase 3 - Betriebssicherheit, Sperren & Vertragswarnungen
 

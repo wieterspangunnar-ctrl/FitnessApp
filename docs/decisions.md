@@ -2,6 +2,29 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-10 - FZ-041 Admin steuert Kursbuchungen zentral ueber Buchungsmodul
+
+**Kontext:** Laut `docs/spec.md` §1 soll Lisa als Admin alle Kursbuchungen ueber das Kontrollzentrum steuern koennen. Bisher gab es primär eine Uebersicht und Mitglieds-getriebene Flows, aber keine vollstaendige Admin-Steuerung fuer manuelles Eingreifen.
+
+### Entscheidung
+
+FZ-041 wird als gezielte Erweiterung des bestehenden Buchungsmoduls umgesetzt, ohne neues Subsystem einzufuehren:
+- In `src/app/bookings/page.tsx` kann der Admin jetzt Buchungen direkt anlegen, pro Buchung den Status setzen und Buchungen stornieren.
+- In `src/app/api/bookings/[id]/route.ts` wurde ein `PUT`-Handler eingefuehrt, der nur gueltige `BookingStatus`-Werte (`CONFIRMED`, `CANCELLED_LATE`, `CANCELLED_TIMELY`, `NO_SHOW`) akzeptiert.
+- Die bestehende Storno- und Nachruecklogik im `DELETE`-Handler bleibt unveraendert, damit BR2/BR4 weiterhin konsistent greifen.
+
+### Alternativen verworfen
+
+- Separates Admin-Only Booking-API-Modul: haette redundante Endpunkte geschaffen und bestehende Fachlogik dupliziert.
+- Freitext-Status ohne serverseitige Enum-Validierung: erhoeht Risiko ungueltiger Stati und inkonsistenter Auswertungen.
+- Vollstaendiger Umbau des Booking-Flows: fuer den Scope von FZ-041 zu gross und nicht noetig.
+
+### Konsequenzen
+
+- Lisa kann Buchungen jetzt operativ zentral steuern (anlegen, stornieren, Status pflegen) ohne DB-Eingriff.
+- `NO_SHOW` kann adminseitig sauber gesetzt werden und bereitet FZ-046/FZ-047 fachlich vor.
+- Die Erweiterung bleibt chirurgisch: bestehende Business-Rule-Implementierungen fuer Storno/Nachruecken wurden nicht aufgeweicht.
+
 ## 2026-07-10 - FZ-040 Nachruecker-Benachrichtigung nach erfolgreichem Move-Up ausgelost
 
 **Kontext:** Laut `docs/spec.md` BR2 soll bei rechtzeitiger Stornierung mit automatischem Nachruecken sofort eine Benachrichtigung an das nachgerueckte Mitglied ausgeloest werden.
