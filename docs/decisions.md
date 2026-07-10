@@ -2,11 +2,38 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-10 - FZ-039 Automatisches Nachruecken bei rechtzeitiger Stornierung transaktional umgesetzt
+
+**Kontext:** Gemäss `docs/spec.md` BR2 soll beim Stornieren eines Kurses mit rechtzeitiger Abmeldung (>= 2 Std. vorher) das erste Wartelistenmitglied automatisch zu einem bestätigten Platz (`CONFIRMED`) nachrücken.
+
+### Entscheidung
+
+Die Stornierungslogik `DELETE /api/bookings/[id]` wurde erweitert: Nach dem Setzen von `status = CANCELLED_TIMELY` wird atomar eine Transaktion eingeleitet, die:
+1. Das erste Wartelistenmitglied (`position = 1`) ausfindig macht
+2. Eine neue bestätigte `Booking` für dieses Mitglied anlegt
+3. Den Wartelisteneintrag löst und die restlichen Positionen über `deleteWaitlistEntryAndReindex()` aus `src/lib/waitlist-position.ts` konsistent reindexiert
+
+Die Implementierung nutzt `prisma.$transaction()` zur atomaren Ausführung und verhindert Race Conditions bei parallelen Stornierungen desselben Kurses.
+
+### Alternativen verworfen
+
+- Nachruecken asynchron/delayed: erhöht Komplexität und Risiko von Benachrichtigungs-Race Conditions.
+- Warteliste direkt zu Booking promoten ohne neuen Datensatz: fachlich inkorrekt, da die Buchungshistorie (`booked_at`) verloren ginge.
+- Nur das Wartelisteneintrag aktualisieren ohne separate Booking: widerspricht dem Datenmodell (Booking und Waitlist sind disjunkt).
+
+### Konsequenzen
+
+- Mitglieder auf der Warteliste rücken sofort nach, wenn jemand rechtzeitig storniert.
+- Der Nachruecker bekommt eine neue `booked_at`-Timestamp, was die Buchungshistorie sauberhält.
+- FZ-040 (Nachruecker-Benachrichtigung) ist vorbereitet; die Notifikationslogik kann sich auf die erfolgreiche Booking-Erstellung abstützen.
+- Die Transaktionalität verhindert Doppelvergaben und Wartelisten-Inkonsistenzen auch unter Last.
+
 ## 2026-07-10 - FZ-038 Wartelistenpositionen transaktionssicher stabilisiert
 
 **Kontext:** Nach FZ-037 konnten Wartelisteneintraege zwar angelegt werden, aber Positionsaenderungen und Loeschungen konnten zu Luecken oder Konflikten mit der Unique-Constraint `@@unique([courseId, position])` fuehren. Laut `docs/spec.md` BR2 muss die Reihenfolge stabil bleiben.
 
 ### Entscheidung
+
 
 Die Wartelisten-Positionslogik wird zentral in `src/lib/waitlist-position.ts` gebuendelt und von Booking- sowie Waitlist-API gemeinsam genutzt. Einfuegen, Verschieben und Loeschen laufen transaktional und reindizieren die Positionen pro Kurs lueckenlos auf `1..n`.
 

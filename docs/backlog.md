@@ -70,7 +70,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-036 | Premium-Ausnahme fuer spaete Stornierung anwenden | 2 | done | docs/spec.md BR4 | Implementiert in `src/app/api/bookings/[id]/route.ts` mit testbarer Regel in `src/lib/cancellation-status.ts` |
 | FZ-037 | Wartelistenbeitritt bei vollem Kurs | 2 | done | docs/spec.md §1, §2.1 | Implementiert in `src/app/api/bookings/route.ts`; vergibt die naechste Wartelistenposition |
 | FZ-038 | Wartelistenpositionen stabil verwalten | 2 | done | docs/spec.md §2.1, BR2 | Implementiert: zentrale Reindex-Logik fuer POST/PUT/DELETE in Waitlist- und Booking-API, Reihenfolge stabil nach Position mit `created_at` als Tie-Breaker |
-| FZ-039 | Automatisches Nachruecken bei rechtzeitiger Stornierung | 2 | validated | docs/spec.md BR2 | Position 1 wird `CONFIRMED` |
+| FZ-039 | Automatisches Nachruecken bei rechtzeitiger Stornierung | 2 | done | docs/spec.md BR2 | Implementiert in `src/app/api/bookings/[id]/route.ts`; Nachruecker-Logik transaktion und automatisches Reindexen |
 | FZ-040 | Nachruecker-Benachrichtigung ausloesen | 2 | validated | docs/spec.md BR2 | In-App/E-Mail-Kanal noch technisch entscheiden |
 | FZ-041 | Admin kann alle Kursbuchungen steuern | 2 | validated | docs/spec.md §1 | Buchungen ueber Kontrollzentrum verwalten |
 
