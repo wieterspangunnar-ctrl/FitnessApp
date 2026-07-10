@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-10 - FZ-036 Premium-Ausnahme fuer spaete Stornierung als zentrale Regel umgesetzt
+
+**Kontext:** Gemäss `docs/spec.md` BR4 muss bei Stornierungen unter 2 Stunden vor Kursbeginn fuer Tarife mit `hasFreeLateCancellation = true` weiterhin `CANCELLED_TIMELY` gesetzt werden, waehrend andere Tarife als `CANCELLED_LATE` gelten.
+
+### Entscheidung
+
+Die Storno-Entscheidungslogik wurde aus der API-Route extrahiert und als zentrale, testbare Regel in `src/lib/cancellation-status.ts` umgesetzt. Die Route `DELETE /api/bookings/[id]` nutzt diese Funktion jetzt direkt.
+
+Abgedeckte Regel faelle:
+- >= 2 Stunden vor Kursbeginn: `CANCELLED_TIMELY`
+- < 2 Stunden ohne Premium-Ausnahme: `CANCELLED_LATE`
+- < 2 Stunden mit Premium-Ausnahme: `CANCELLED_TIMELY`
+
+### Alternativen verworfen
+
+- Logik nur inline in der Route behalten: schwerer isoliert zu testen und bei spaeteren Regeln zu erweitern.
+- Premium-Ausnahme nur in der UI modellieren: fachlich unsicher, da API-Aufrufe die Regel umgehen koennten.
+
+### Konsequenzen
+
+- Die BR4-Ausnahme ist serverseitig eindeutig und wiederverwendbar implementiert.
+- Unit-Tests in `src/lib/cancellation-status.test.ts` sichern die drei Kernfaelle ab.
+- Folgefeatures wie Gebuehrenbuchung (FZ-044) koennen auf dem klaren Status-Ergebnis aufbauen.
+
 ## 2026-07-03 - Next.js mit SQLite und Prisma als initialer Stack
 
 **Kontext:** Fuer FZ-001 und FZ-007 braucht das Projekt ein lauffaehiges Web-App-Geruest und eine relationale Datenbasis, die die Business Rules aus `docs/spec.md` transaktionssicher vorbereiten kann.

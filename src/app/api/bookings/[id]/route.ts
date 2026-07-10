@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCancellationStatus } from "@/lib/cancellation-status";
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,16 +22,11 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Nur bestätigte Buchungen können storniert werden" }, { status: 400 });
     }
 
-    const courseStart = new Date(booking.course.startTime).getTime();
-    const now = Date.now();
-    const hoursBefore = (courseStart - now) / (1000 * 60 * 60);
-
-    let newStatus: "CANCELLED_TIMELY" | "CANCELLED_LATE" = "CANCELLED_TIMELY";
-
-    if (hoursBefore < 2) {
-      const hasFreeLate = Boolean(booking.member.membershipTier?.hasFreeLateCancellation);
-      newStatus = hasFreeLate ? "CANCELLED_TIMELY" : "CANCELLED_LATE";
-    }
+    const newStatus = getCancellationStatus({
+      courseStart: booking.course.startTime,
+      now: new Date(),
+      hasFreeLateCancellation: booking.member.membershipTier.hasFreeLateCancellation
+    });
 
     const updated = await prisma.booking.update({
       where: { id },
