@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCancellationStatus } from "@/lib/cancellation-status";
 import { deleteWaitlistEntryAndReindex } from "@/lib/waitlist-position";
+import { notificationDispatcher, type WaitlistMoveUpNotificationPayload } from "@/lib/notifications";
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,7 +31,9 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     });
 
     // Transaktionale Abwicklung: Stornierung + automatisches Nachruecken
-    const updated = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
+      let waitlistMoveUpNotification: WaitlistMoveUpNotificationPayload | null = null;
+
       const cancellation = await tx.booking.update({
         where: { id },
         data: { status: newStatus },
@@ -69,15 +72,43 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
             id: nextOnWaitlist.id
           });
 
-          // TODO: FZ-040 - Benachrichtigung an Nachruecker senden
-          // sendWaitlistMoveUpNotification(nextOnWaitlist.member, nextOnWaitlist.course);
+          waitlistMoveUpNotification = {
+            member: {
+              id: nextOnWaitlist.member.id,
+              email: nextOnWaitlist.member.email,
+              firstName: nextOnWaitlist.member.firstName,
+              lastName: nextOnWaitlist.member.lastName
+            },
+            course: {
+              id: nextOnWaitlist.course.id,
+              startTime: nextOnWaitlist.course.startTime,
+              courseTypeName: nextOnWaitlist.course.courseType.name
+            }
+          };
         }
       }
 
-      return cancellation;
+      return {
+        cancellation,
+        waitlistMoveUpNotification
+      };
     });
 
-    return NextResponse.json(updated);
+    if (result.waitlistMoveUpNotification) {
+      const payload = result.waitlistMoveUpNotification;
+
+      try {
+        await notificationDispatcher.sendWaitlistMoveUpNotification(payload);
+      } catch (notificationError) {
+        console.error("WAITLIST_MOVE_UP_NOTIFICATION_FAILED", {
+          memberId: payload.member.id,
+          courseId: payload.course.id,
+          error: notificationError instanceof Error ? notificationError.message : "Unbekannter Fehler"
+        });
+      }
+    }
+
+    return NextResponse.json(result.cancellation);
   } catch (error) {
     return NextResponse.json({ error: "Stornierung fehlgeschlagen" }, { status: 500 });
   }

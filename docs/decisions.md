@@ -2,6 +2,28 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-10 - FZ-040 Nachruecker-Benachrichtigung nach erfolgreichem Move-Up ausgelost
+
+**Kontext:** Laut `docs/spec.md` BR2 soll bei rechtzeitiger Stornierung mit automatischem Nachruecken sofort eine Benachrichtigung an das nachgerueckte Mitglied ausgeloest werden.
+
+### Entscheidung
+
+In `DELETE /api/bookings/[id]` wird nach erfolgreicher Transaktion (Stornierung + Move-Up + Wartelisten-Reindex) ein dedizierter Notification-Trigger ausgefuehrt. Die Zustellung ist in `src/lib/notifications.ts` als provider-neutrale Dispatcher-Funktion gekapselt (`sendWaitlistMoveUpNotification`) und markiert die vorgesehenen Kanaele `IN_APP` und `EMAIL`.
+
+Die Route sammelt den Notification-Payload innerhalb der Transaktion, loest den Trigger aber erst nach Commit aus. Damit bleiben Datenoperationen atomar, waehrend externe Side-Effects keine Transaktion offen halten.
+
+### Alternativen verworfen
+
+- Notification direkt innerhalb der DB-Transaktion senden: erhoeht Risiko von langen Locks und Rollback-Seiteneffekten.
+- FZ-040 bis zur finalen Provider-Entscheidung offen lassen: verletzt BR2, obwohl der Trigger technisch bereits eindeutig ausloesbar ist.
+- Ad-hoc-Logging ohne gekapselten Dispatcher: erschwert spaeteren Austausch gegen echten In-App/E-Mail-Provider.
+
+### Konsequenzen
+
+- Nachruecker-Benachrichtigung wird jetzt serverseitig ausgeloest, sobald ein Mitglied erfolgreich nachrueckt.
+- Ein spaeterer Providerwechsel (z. B. SMTP, In-App Inbox, Queue) kann ohne Anpassung der Fachlogik in der Booking-Route erfolgen.
+- Fehlschlaege bei der Zustellung blockieren die Stornierung nicht; sie werden als Fehler protokolliert.
+
 ## 2026-07-10 - FZ-039 Automatisches Nachruecken bei rechtzeitiger Stornierung transaktional umgesetzt
 
 **Kontext:** Gemäss `docs/spec.md` BR2 soll beim Stornieren eines Kurses mit rechtzeitiger Abmeldung (>= 2 Std. vorher) das erste Wartelistenmitglied automatisch zu einem bestätigten Platz (`CONFIRMED`) nachrücken.
