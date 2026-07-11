@@ -7,7 +7,15 @@ import { notificationDispatcher } from "@/lib/notifications";
 import type { WaitlistMoveUpNotificationPayload } from "@/lib/notifications";
 
 test("updates booking status for admin control", async () => {
+  const originalBookingFindUnique = prisma.booking.findUnique;
   const originalBookingUpdate = prisma.booking.update;
+
+  prisma.booking.findUnique = (async () => ({
+    status: "CONFIRMED",
+    course: {
+      startTime: new Date(Date.now() - 60 * 60 * 1000)
+    }
+  })) as any;
 
   prisma.booking.update = (async ({ where, data }: { where: { id: string }; data: { status: string } }) => ({
     id: where.id,
@@ -58,7 +66,64 @@ test("updates booking status for admin control", async () => {
     const payload = await response.json();
     assert.equal(payload.status, "NO_SHOW");
   } finally {
+    prisma.booking.findUnique = originalBookingFindUnique;
     prisma.booking.update = originalBookingUpdate;
+  }
+});
+
+test("rejects NO_SHOW for non-confirmed bookings", async () => {
+  const originalBookingFindUnique = prisma.booking.findUnique;
+
+  prisma.booking.findUnique = (async () => ({
+    status: "CANCELLED_TIMELY",
+    course: {
+      startTime: new Date(Date.now() - 60 * 60 * 1000)
+    }
+  })) as any;
+
+  try {
+    const response = await PUT(
+      new Request("http://localhost/api/bookings/booking-1", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: "NO_SHOW" })
+      }),
+      { params: Promise.resolve({ id: "booking-1" }) }
+    );
+
+    assert.equal(response.status, 400);
+    const payload = await response.json();
+    assert.equal(payload.error, "NO_SHOW kann nur fuer bestaetigte Buchungen gesetzt werden");
+  } finally {
+    prisma.booking.findUnique = originalBookingFindUnique;
+  }
+});
+
+test("rejects NO_SHOW before course start", async () => {
+  const originalBookingFindUnique = prisma.booking.findUnique;
+
+  prisma.booking.findUnique = (async () => ({
+    status: "CONFIRMED",
+    course: {
+      startTime: new Date(Date.now() + 60 * 60 * 1000)
+    }
+  })) as any;
+
+  try {
+    const response = await PUT(
+      new Request("http://localhost/api/bookings/booking-1", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: "NO_SHOW" })
+      }),
+      { params: Promise.resolve({ id: "booking-1" }) }
+    );
+
+    assert.equal(response.status, 400);
+    const payload = await response.json();
+    assert.equal(payload.error, "NO_SHOW kann erst nach Kursbeginn gesetzt werden");
+  } finally {
+    prisma.booking.findUnique = originalBookingFindUnique;
   }
 });
 

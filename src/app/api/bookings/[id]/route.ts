@@ -29,6 +29,34 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 
   try {
+    if (body.status === "NO_SHOW") {
+      const existingBooking = await prisma.booking.findUnique({
+        where: { id },
+        select: {
+          status: true,
+          course: { select: { startTime: true } }
+        }
+      });
+
+      if (!existingBooking) {
+        return NextResponse.json({ error: "Buchung nicht gefunden" }, { status: 404 });
+      }
+
+      if (existingBooking.status !== "CONFIRMED") {
+        return NextResponse.json(
+          { error: "NO_SHOW kann nur fuer bestaetigte Buchungen gesetzt werden" },
+          { status: 400 }
+        );
+      }
+
+      if (existingBooking.course.startTime > new Date()) {
+        return NextResponse.json(
+          { error: "NO_SHOW kann erst nach Kursbeginn gesetzt werden" },
+          { status: 400 }
+        );
+      }
+    }
+
     const booking = await prisma.booking.update({
       where: { id },
       data: { status: body.status },

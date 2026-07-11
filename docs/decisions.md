@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-11 - FZ-046 No-Show-Markierung fachlich eingeschraenkt und serverseitig validiert
+
+**Kontext:** Laut `docs/spec.md` BR5 sind `NO_SHOW`-Markierungen die Grundlage fuer das spaetere Strafsystem (3 in Folge -> 14 Tage Sperre). Nach FZ-041 war das Setzen von `NO_SHOW` im Admin-Flow zwar moeglich, aber ohne fachliche Guardrails: Der Status konnte auch fuer noch nicht gestartete Kurse oder bereits stornierte Buchungen gesetzt werden.
+
+### Entscheidung
+
+FZ-046 wird als serverseitig erzwungene Regel in `PUT /api/bookings/[id]` umgesetzt:
+- `NO_SHOW` darf nur aus dem Ausgangsstatus `CONFIRMED` gesetzt werden.
+- `NO_SHOW` darf erst gesetzt werden, wenn `course.startTime` erreicht/ueberschritten ist.
+- Bei Verstoessen liefert die API klare 400-Fehler; bei unbekannter Buchung 404.
+- Die Regeln sind durch API-Tests in `src/app/api/bookings/[id]/route.test.ts` abgesichert (Positivfall + zwei Negativfaelle).
+
+### Alternativen verworfen
+
+- Nur UI-seitige Einschränkung im Admin-Formular: unsicher, da direkte API-Aufrufe die Regel umgehen koennen.
+- Freies Status-Setzen mit spaeterer Korrekturlogik: erhoeht Risiko inkonsistenter Daten fuer FZ-047/FZ-048.
+- Eigenes No-Show-Objekt statt Booking-Status: fuer den aktuellen Scope unnoetig komplex.
+
+### Konsequenzen
+
+- `NO_SHOW` ist jetzt ein belastbarer Fachstatus fuer tatsaechlich ausgefallene Teilnahme.
+- FZ-047 (No-Show-Serie) kann auf valideren Statusdaten aufbauen.
+- Die Admin-Steuerbarkeit aus FZ-041 bleibt erhalten, aber mit BR5-konformer Leitplanke.
+
 ## 2026-07-11 - FZ-045 Kundenkonto als zentrales Ledger fuer Gebuehren und Posten modelliert
 
 **Kontext:** Laut `docs/spec.md` BR4 und BR7 muessen spaete Stornierungen und PT-Kosten auf ein nachvollziehbares Kundenkonto gebucht werden. Nach FZ-044 waren Late-Cancellation-Betraege zwar an `Booking` sichtbar, aber es fehlte ein zentrales Postenmodell fuer offene Forderungen, Billing-Status und spaetere Monatsabschluesse.
