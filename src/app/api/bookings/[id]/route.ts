@@ -116,6 +116,25 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     if (body.status === "NO_SHOW") {
       noShowStreak = await getConsecutiveNoShowStreak(booking.memberId, booking.course.startTime);
+
+      // Setze 14-Tage-Sperre nach 3 aufeinanderfolgenden No-Shows (BR5)
+      if (noShowStreak >= 3) {
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+        await prisma.noShowRestriction.upsert({
+          where: { memberId: booking.memberId },
+          create: {
+            memberId: booking.memberId,
+            startedAt: now,
+            expiresAt
+          },
+          update: {
+            startedAt: now,
+            expiresAt
+          }
+        });
+      }
     }
 
     if (noShowStreak !== null) {

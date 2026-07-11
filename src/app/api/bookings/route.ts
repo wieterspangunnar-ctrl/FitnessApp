@@ -47,6 +47,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Mitglied nicht gefunden" }, { status: 404 });
   }
 
+  // Prüfe auf aktive No-Show-Sperre (BR5)
+  const restriction = await prisma.noShowRestriction.findUnique({
+    where: { memberId }
+  });
+  if (restriction && restriction.expiresAt > new Date()) {
+    return NextResponse.json(
+      {
+        error: "Du bist aufgrund von 3 aufeinanderfolgenden Fehlzeiten bis zum " +
+          restriction.expiresAt.toLocaleDateString("de-DE") +
+          " von neuen Kursbuchungen gesperrt."
+      },
+      { status: 403 }
+    );
+  }
+
   const course = await prisma.course.findUnique({
     where: { id: courseId },
     select: { id: true, startTime: true, status: true }

@@ -2,6 +2,50 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-11 - FZ-048/FZ-049/FZ-050 No-Show-Strafsystem mit automatischer 14-Tage-Sperre umgesetzt
+
+**Kontext:** Laut `docs/spec.md` BR5 soll nach drei aufeinanderfolgenden No-Shows ein Mitglied automatisch fuer 14 Tage von Neubuchungen gesperrt werden. Diese drei Features bilden ein zusammenhängendes Strafsystem und wurden daher zusammen implementiert.
+
+### Entscheidung
+
+**FZ-048 – 14-Tage-Sperre automatisch setzen:**
+- Neue Entität `NoShowRestriction` mit Feldern `memberId` (unique), `startedAt`, `expiresAt`.
+- In `PUT /api/bookings/[id]` bei Zielstatus `NO_SHOW`: Nach dem Status-Update wird `getConsecutiveNoShowStreak()` aufgerufen.
+- Wenn `noShowStreak >= 3`: `NoShowRestriction` wird via `upsert` erstellt oder aktualisiert. `expiresAt` berechnet sich als `now + 14 Tage`.
+- Keine retroaktive Anwendung auf alte Mitglieder mit bereits 3+ No-Shows; Sperre wird nur bei zukünftigen No-Show-Statusupdates gesetzt.
+
+**FZ-049 – Neubuchungen während Sperre blockieren:**
+- In `POST /api/bookings` vor allen anderen Prüfungen: `NoShowRestriction.findUnique(where: {memberId})` abfragen.
+- Falls gefunden und `expiresAt > now`: HTTP 403 mit aussagekräftiger Fehlermeldung, die das Verfallsdatum enthält (z. B. "bis zum 25.07.2026").
+- Abgelaufene Sperren werden automatisch ignoriert (nicht aktiv gelöscht, da Cleanup optional ist).
+
+**FZ-050 – Admin-Dashboard für aktive Sperren:**
+- Neue Route `GET /api/restrictions`: Liefert alle aktiven Sperren (gefiltert auf `expiresAt > now`) mit Member-Details.
+- Neue Admin-Seite `src/app/restrictions/page.tsx`: Tabelle mit Mitgliedsnamen, Email, Gültigkeitszeitraum.
+- Button "Aufheben" pro Zeile → `DELETE /api/restrictions/[id]`, um Admin-Override zu ermöglichen (z. B. bei besonderen Fällen).
+
+### Begründung für die enge Kopplung
+
+Die drei Features sind **fachlich untrennbar**:
+- FZ-048 ohne FZ-049 wäre wirkungslos (Sperre könnte umgangen werden).
+- FZ-049 ohne FZ-048 hätte keine Sperren zu blockieren.
+- FZ-050 ohne beide wäre Lisas Kontrollverlust (keine Sicht auf aktive Strafen).
+
+Implementiert als **synchrone, serverseitige, transaktionssichere Regeln**, nicht als asynchrone Jobs.
+
+### Alternativen verworfen
+
+- Asynchroner Job bei 3. No-Show: zu viel Latenz, Risiko von Buchungen zwischen No-Show und Sperre-Setzen.
+- Sperre am Member-Modell direkt: führt zu Duplizierung mit `NoShowRestriction`; hätte keine explizite Gültigkeitsdauer.
+- Client-seitige Blockierung ohne serverseitige Validierung: unsicher bei direkten API-Aufrufen.
+- Automatisches Löschen abgelaufener Sperren: nicht nötig; Abfrage mit `expiresAt > now` ist trivial und Auditierbarkeit bleibt erhalten.
+
+### Konsequenzen
+
+- BR5 ist nun vollständig und erzwingbar serverseitig implementiert.
+- Phase 3 ("Betriebssicherheit") damit um 3 Features kompletter.
+- Keine externen Dependencies (Jobs, Scheduler) nötig; läuft inline mit den bestehenden Booking-APIs.
+
 ## 2026-07-11 - FZ-047 Drei No-Shows in Folge als serverseitige Sequenzlogik umgesetzt
 
 **Kontext:** Laut `docs/spec.md` BR5 soll nach drei unentschuldigten Fehlterminen in Folge eine 14-Tage-Sperre greifen. Nach FZ-046 waren `NO_SHOW`-Statuswerte fachlich gueltig, aber die eigentliche Serienerkennung pro Mitglied fehlte noch.
