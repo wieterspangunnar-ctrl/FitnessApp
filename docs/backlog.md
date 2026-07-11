@@ -87,7 +87,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-048 | 14-Tage-Neubuchungssperre setzen | 3 | done | docs/spec.md BR5 | Implementiert: Prisma-Modell `NoShowRestriction` (memberId unique, startedAt, expiresAt); PUT `/api/bookings/[id]` setzt Sperre via upsert nach 3 aufeinanderfolgenden No-Shows; siehe `docs/decisions.md` fuer Entwurfsbgruendung |
 | FZ-049 | Neubuchungen waehrend aktiver Sperre blockieren | 3 | done | docs/spec.md BR5 | Implementiert: POST `/api/bookings` prueft auf aktive `NoShowRestriction` bevor andere Validierungen greifen; HTTP 403 mit aussagekraeftiger Fehlermeldung (Verfallsdatum) bei aktiver Sperre |
 | FZ-050 | Aktuelle Sperren im Admin-Dashboard anzeigen | 3 | done | docs/spec.md §1, BR5 | Implementiert: GET `/api/restrictions` filtert und liefert aktive Sperren; Admin-Seite `src/app/restrictions/page.tsx` zeigt Tabelle; DELETE `/api/restrictions/[id]` erlaubt manuelles Aufheben durch Lisa |
-| FZ-051 | Taegliche Vertragsende-Pruefung einrichten | 3 | validated | docs/spec.md BR8 | Job fuer `contract_end_date` |
+| FZ-051 | Taegliche Vertragsende-Pruefung einrichten | 3 | done | docs/spec.md BR8 | Implementiert: GET `/api/jobs/contract-end-check` plus UTC-stabile Kandidatenlogik in `src/lib/contract-end-reminders.ts`, inkl. optionalem `CRON_SECRET`-Schutz |
 | FZ-052 | Erinnerung 14 Tage vor Vertragsende senden | 3 | validated | docs/spec.md BR8 | Mitglied benachrichtigen |
 | FZ-053 | Erinnerung 3 Tage vor Vertragsende senden | 3 | validated | docs/spec.md BR8 | Mitglied benachrichtigen |
 | FZ-054 | Vertragsende-Warnliste im Admin-Dashboard | 3 | validated | docs/spec.md BR8 | Lisa sieht auslaufende Vertraege |

@@ -2,6 +2,31 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-11 - FZ-051 Taegliche Vertragsende-Pruefung als geschuetzter Job-Endpunkt umgesetzt
+
+**Kontext:** Laut `docs/spec.md` BR8 muss das System taeglich `contract_end_date` pruefen und die Faelle exakt fuer 14 sowie 3 Tage Restlaufzeit identifizieren. Vor der Umsetzung gab es keine zentrale, wiederverwendbare Prueflogik und keinen aufrufbaren Job-Endpunkt.
+
+### Entscheidung
+
+FZ-051 wird als serverseitiger Job-Endpunkt mit separater Domain-Logik umgesetzt:
+- Neue Domain-Funktion `getContractEndReminderCandidates()` in `src/lib/contract-end-reminders.ts`.
+- Neue Route `GET /api/jobs/contract-end-check` in `src/app/api/jobs/contract-end-check/route.ts`.
+- Die Logik arbeitet mit UTC-Tagesgrenzen und liefert getrennte Listen fuer `dueIn14Days` und `dueIn3Days` inklusive Count-Feldern.
+- Beruecksichtigt werden Mitglieder mit Status `ACTIVE` und `PAUSED`; `TERMINATED` wird ausgeschlossen.
+- Optionaler Job-Schutz: Ist `CRON_SECRET` gesetzt, muss der Header `x-cron-secret` uebereinstimmen, sonst HTTP 401.
+
+### Alternativen verworfen
+
+- Direkt in der Route implementierte Prueflogik ohne Lib-Funktion: schlechter testbar und schwerer fuer FZ-052/FZ-053 wiederverwendbar.
+- Lokale Datumsarithmetik ohne klare UTC-Normalisierung: erhoeht Risiko fuer Off-by-one-Fehler an Tagesgrenzen.
+- Ungeschuetzter Job-Endpunkt ohne Secret-Option: zu offen fuer ungewollte externe Aufrufe in produktionsnahen Setups.
+
+### Konsequenzen
+
+- BR8-Teil "taegliche Pruefung" ist technisch implementiert und per Endpoint triggerbar.
+- FZ-052 und FZ-053 koennen direkt auf den gelieferten Kandidatenlisten aufsetzen.
+- Die API ist minimal-invasiv, ohne neue Datenbanktabellen oder Migrationen.
+
 ## 2026-07-11 - FZ-048/FZ-049/FZ-050 No-Show-Strafsystem mit automatischer 14-Tage-Sperre umgesetzt
 
 **Kontext:** Laut `docs/spec.md` BR5 soll nach drei aufeinanderfolgenden No-Shows ein Mitglied automatisch fuer 14 Tage von Neubuchungen gesperrt werden. Diese drei Features bilden ein zusammenhängendes Strafsystem und wurden daher zusammen implementiert.
