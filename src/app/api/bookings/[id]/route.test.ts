@@ -170,6 +170,7 @@ test("books 5 EUR late cancellation fee for non-premium members", async () => {
   };
 
   let bookingUpdateData: any = null;
+  let accountEntryUpsertArgs: any = null;
 
   prisma.booking.findUnique = (async () => ({
     id: "booking-1",
@@ -199,6 +200,19 @@ test("books 5 EUR late cancellation fee for non-premium members", async () => {
           };
         }
       },
+      customerAccountEntry: {
+        upsert: async (args: Record<string, unknown>) => {
+          accountEntryUpsertArgs = args;
+
+          return {
+            id: "account-entry-1",
+            bookingId: "booking-1",
+            type: "LATE_CANCELLATION_FEE",
+            amountCents: 500,
+            billingStatus: "PENDING"
+          };
+        }
+      },
       waitlist: {
         findFirst: async () => null
       }
@@ -214,6 +228,29 @@ test("books 5 EUR late cancellation fee for non-premium members", async () => {
     assert.equal(bookingUpdateData?.status, "CANCELLED_LATE");
     assert.equal(bookingUpdateData?.lateCancellationFeeCents, 500);
     assert.ok(bookingUpdateData?.lateCancellationFeeBookedAt instanceof Date);
+    assert.deepEqual(accountEntryUpsertArgs, {
+      where: {
+        bookingId_type: {
+          bookingId: "booking-1",
+          type: "LATE_CANCELLATION_FEE"
+        }
+      },
+      create: {
+        memberId: "member-1",
+        bookingId: "booking-1",
+        type: "LATE_CANCELLATION_FEE",
+        amountCents: 500,
+        billingStatus: "PENDING",
+        description: "Spaete Kursstornierung (< 2 Stunden)"
+      },
+      update: {
+        amountCents: 500,
+        billingStatus: "PENDING",
+        billedAt: null,
+        paidAt: null,
+        description: "Spaete Kursstornierung (< 2 Stunden)"
+      }
+    });
   } finally {
     prisma.booking.findUnique = original.bookingFindUnique;
     prisma.$transaction = original.transaction;
@@ -227,6 +264,7 @@ test("does not book late cancellation fee for premium members", async () => {
   };
 
   let bookingUpdateData: any = null;
+  let accountEntryUpsertCalled = false;
 
   prisma.booking.findUnique = (async () => ({
     id: "booking-1",
@@ -257,6 +295,12 @@ test("does not book late cancellation fee for premium members", async () => {
         },
         create: async () => ({ id: "booking-promoted" })
       },
+      customerAccountEntry: {
+        upsert: async () => {
+          accountEntryUpsertCalled = true;
+          return { id: "should-not-exist" };
+        }
+      },
       waitlist: {
         findFirst: async () => null
       }
@@ -272,6 +316,7 @@ test("does not book late cancellation fee for premium members", async () => {
     assert.equal(bookingUpdateData?.status, "CANCELLED_TIMELY");
     assert.equal(bookingUpdateData?.lateCancellationFeeCents, null);
     assert.equal(bookingUpdateData?.lateCancellationFeeBookedAt, null);
+    assert.equal(accountEntryUpsertCalled, false);
   } finally {
     prisma.booking.findUnique = original.bookingFindUnique;
     prisma.$transaction = original.transaction;

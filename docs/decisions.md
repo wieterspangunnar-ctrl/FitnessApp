@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-11 - FZ-045 Kundenkonto als zentrales Ledger fuer Gebuehren und Posten modelliert
+
+**Kontext:** Laut `docs/spec.md` BR4 und BR7 muessen spaete Stornierungen und PT-Kosten auf ein nachvollziehbares Kundenkonto gebucht werden. Nach FZ-044 waren Late-Cancellation-Betraege zwar an `Booking` sichtbar, aber es fehlte ein zentrales Postenmodell fuer offene Forderungen, Billing-Status und spaetere Monatsabschluesse.
+
+### Entscheidung
+
+FZ-045 wird als eigenstaendiges Ledger-Modell `CustomerAccountEntry` im Prisma-Schema umgesetzt:
+- Neues Enum `AccountEntryType` mit `LATE_CANCELLATION_FEE` und `PERSONAL_TRAINING_CHARGE`.
+- Neues Modell `CustomerAccountEntry` mit `memberId`, optionalen Quellen (`bookingId`, `personalTrainingBookingId`), `amountCents`, `billingStatus` (`PENDING`, `BILLED_TO_ACCOUNT`, `PAID`) sowie Zeitstempeln (`createdAt`, `billedAt`, `paidAt`).
+- Eindeutigkeit pro Quelle und Typ via `@@unique([bookingId, type])` und `@@unique([personalTrainingBookingId, type])` zur Duplikatvermeidung.
+- `DELETE /api/bookings/[id]` bucht bei `CANCELLED_LATE` transaktional einen `CustomerAccountEntry` (`LATE_CANCELLATION_FEE`, `500` Cent, `PENDING`) per idempotentem `upsert`.
+
+### Alternativen verworfen
+
+- Weiterfuehren ausschliesslich ueber Felder an `Booking`: reicht nicht fuer PT-Posten und zentrales Offene-Posten-Reporting.
+- Separates Kundenkonto je Mitglied mit aggregiertem Saldo ohne Einzelposten: verliert Nachvollziehbarkeit/Auditierbarkeit der Einzelvorgaenge.
+- Async-Nachbuchung ausserhalb der Stornotransaktion: erhoeht Inkonsistenzrisiko bei Fehlerszenarien.
+
+### Konsequenzen
+
+- Storno- und kuenftige PT-Posten teilen sich jetzt ein gemeinsames, auswertbares Datenmodell.
+- FZ-063 bis FZ-067 koennen direkt auf `CustomerAccountEntry` aufsetzen, ohne neues Billing-Grundgeruest.
+- Die bereits vorhandenen `Booking`-Gebuehrenfelder bleiben als direkte Fachspur erhalten; das Ledger bildet den abrechnungsfaehigen Postenbestand.
+
 ## 2026-07-11 - FZ-044 Late-Cancellation-Gebuehr als persistente Buchungsattribute umgesetzt
 
 **Kontext:** Laut `docs/spec.md` BR4 muss bei einer spaeten Stornierung (< 2 Stunden) fuer Basic/Plus automatisch eine Gebuehr von 5,00 EUR auf das Kundenkonto gebucht werden; Premium bleibt gebuehrenfrei. Die bestehende Storno-Logik setzte bereits den Status (`CANCELLED_LATE` vs. `CANCELLED_TIMELY`), persistierte aber noch keinen Geldposten.

@@ -33,6 +33,11 @@ enum BillingStatus {
   PAID
 }
 
+enum AccountEntryType {
+  LATE_CANCELLATION_FEE
+  PERSONAL_TRAINING_CHARGE
+}
+
 enum CourseStatus {
   SCHEDULED
   CANCELLED_TRAINER_SICKNESS
@@ -52,6 +57,7 @@ model Member {
   bookings        Booking[]
   waitlistEntries Waitlist[]
   personalTrainingBookings PersonalTrainingBooking[]
+  accountEntries  CustomerAccountEntry[]
 
   @@map("members")
 }
@@ -140,11 +146,35 @@ model Booking {
   lateCancellationFeeBookedAt    DateTime?     @map("late_cancellation_fee_booked_at")
   member                         Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
   course                         Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  accountEntries                 CustomerAccountEntry[]
 
   @@unique([memberId, courseId])
   @@index([courseId, status])
   @@index([memberId, bookedAt])
   @@map("bookings")
+}
+
+model CustomerAccountEntry {
+  id                        String           @id @default(uuid())
+  memberId                  String           @map("member_id")
+  bookingId                 String?          @map("booking_id")
+  personalTrainingBookingId String?          @map("personal_training_booking_id")
+  type                      AccountEntryType
+  amountCents               Int              @map("amount_cents")
+  billingStatus             BillingStatus    @default(PENDING) @map("billing_status")
+  description               String?
+  createdAt                 DateTime         @default(now()) @map("created_at")
+  billedAt                  DateTime?        @map("billed_at")
+  paidAt                    DateTime?        @map("paid_at")
+  member                    Member           @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  booking                   Booking?         @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  personalTrainingBooking   PersonalTrainingBooking? @relation(fields: [personalTrainingBookingId], references: [id], onDelete: SetNull)
+
+  @@index([memberId, billingStatus, createdAt])
+  @@index([type, createdAt])
+  @@unique([bookingId, type])
+  @@unique([personalTrainingBookingId, type])
+  @@map("customer_account_entries")
 }
 
 model Waitlist {
@@ -173,6 +203,7 @@ model PersonalTrainingBooking {
   billingStatus     BillingStatus          @default(PENDING) @map("billing_status")
   trainer           Trainer                @relation(fields: [trainerId], references: [id], onDelete: Cascade)
   member            Member?                @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  accountEntries    CustomerAccountEntry[]
 
   @@index([trainerId, startTime])
   @@index([memberId, startTime])

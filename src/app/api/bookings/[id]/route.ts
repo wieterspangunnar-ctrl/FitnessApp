@@ -87,6 +87,32 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
         include: { member: true, course: { include: { courseType: true, room: true, trainer: true } } }
       });
 
+      if (newStatus === "CANCELLED_LATE") {
+        await tx.customerAccountEntry.upsert({
+          where: {
+            bookingId_type: {
+              bookingId: booking.id,
+              type: "LATE_CANCELLATION_FEE"
+            }
+          },
+          create: {
+            memberId: booking.memberId,
+            bookingId: booking.id,
+            type: "LATE_CANCELLATION_FEE",
+            amountCents: LATE_CANCELLATION_FEE_CENTS,
+            billingStatus: "PENDING",
+            description: "Spaete Kursstornierung (< 2 Stunden)"
+          },
+          update: {
+            amountCents: LATE_CANCELLATION_FEE_CENTS,
+            billingStatus: "PENDING",
+            billedAt: null,
+            paidAt: null,
+            description: "Spaete Kursstornierung (< 2 Stunden)"
+          }
+        });
+      }
+
       // Nachruecken bei rechtzeitiger Stornierung (BR2)
       if (newStatus === "CANCELLED_TIMELY") {
         const nextOnWaitlist = await tx.waitlist.findFirst({

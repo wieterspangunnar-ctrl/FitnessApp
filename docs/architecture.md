@@ -47,13 +47,13 @@ Das initiale Prisma-Schema liegt in `prisma/schema.prisma`. Es bildet die Kernen
 - `TrainerQualification`
 - `Room`
 - `Booking`
+- `CustomerAccountEntry`
 - `Waitlist`
 - `PersonalTrainingBooking`
 - `Video`
 
 ### Noch zu pruefende Ergaenzungen
 
-- `AccountCharge` oder `BillingItem` fuer Stornogebuehren und PT-Posten.
 - `BookingRestriction` oder Felder am `Member` fuer No-Show-Sperren.
 - `Notification`/`NotificationDelivery` fuer In-App/E-Mail-Nachrichten und Auditierbarkeit.
 - `CheckIn` fuer spaeteren QR-Check-In.
