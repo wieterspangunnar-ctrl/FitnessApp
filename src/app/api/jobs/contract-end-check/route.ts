@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import { getContractEndReminderCandidates } from "@/lib/contract-end-reminders";
+import { notificationDispatcher } from "@/lib/notifications";
+
+export const contractEndCheckDependencies = {
+  getContractEndReminderCandidates,
+  sendContractEndReminderNotification: notificationDispatcher.sendContractEndReminderNotification
+};
 
 function isAuthorized(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
@@ -18,13 +24,29 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await getContractEndReminderCandidates();
+    const result = await contractEndCheckDependencies.getContractEndReminderCandidates();
+
+    await Promise.all(
+      result.dueIn14Days.map((member) =>
+        contractEndCheckDependencies.sendContractEndReminderNotification({
+          member: {
+            id: member.id,
+            email: member.email,
+            firstName: member.firstName,
+            lastName: member.lastName
+          },
+          contractEndDate: member.contractEndDate,
+          daysUntilEnd: 14
+        })
+      )
+    );
 
     return NextResponse.json({
       checkedAt: result.checkedAt,
       referenceDate: result.referenceDate,
       dueIn14DaysCount: result.dueIn14Days.length,
       dueIn3DaysCount: result.dueIn3Days.length,
+      sentIn14DaysCount: result.dueIn14Days.length,
       dueIn14Days: result.dueIn14Days,
       dueIn3Days: result.dueIn3Days
     });

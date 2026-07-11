@@ -88,7 +88,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-049 | Neubuchungen waehrend aktiver Sperre blockieren | 3 | done | docs/spec.md BR5 | Implementiert: POST `/api/bookings` prueft auf aktive `NoShowRestriction` bevor andere Validierungen greifen; HTTP 403 mit aussagekraeftiger Fehlermeldung (Verfallsdatum) bei aktiver Sperre |
 | FZ-050 | Aktuelle Sperren im Admin-Dashboard anzeigen | 3 | done | docs/spec.md §1, BR5 | Implementiert: GET `/api/restrictions` filtert und liefert aktive Sperren; Admin-Seite `src/app/restrictions/page.tsx` zeigt Tabelle; DELETE `/api/restrictions/[id]` erlaubt manuelles Aufheben durch Lisa |
 | FZ-051 | Taegliche Vertragsende-Pruefung einrichten | 3 | done | docs/spec.md BR8 | Implementiert: GET `/api/jobs/contract-end-check` plus UTC-stabile Kandidatenlogik in `src/lib/contract-end-reminders.ts`, inkl. optionalem `CRON_SECRET`-Schutz |
-| FZ-052 | Erinnerung 14 Tage vor Vertragsende senden | 3 | validated | docs/spec.md BR8 | Mitglied benachrichtigen |
+| FZ-052 | Erinnerung 14 Tage vor Vertragsende senden | 3 | done | docs/spec.md BR8 | Implementiert: Job `GET /api/jobs/contract-end-check` versendet 14-Tage-Erinnerungen ueber `src/lib/notifications.ts`; API-Test in `src/app/api/jobs/contract-end-check/route.test.ts` erweitert |
 | FZ-053 | Erinnerung 3 Tage vor Vertragsende senden | 3 | validated | docs/spec.md BR8 | Mitglied benachrichtigen |
 | FZ-054 | Vertragsende-Warnliste im Admin-Dashboard | 3 | validated | docs/spec.md BR8 | Lisa sieht auslaufende Vertraege |
 

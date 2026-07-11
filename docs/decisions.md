@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-11 - FZ-052 Erinnerung 14 Tage vor Vertragsende serverseitig ausgeloest
+
+**Kontext:** Laut `docs/spec.md` BR8 muss das System exakt 14 Tage vor `contract_end_date` eine automatische Erinnerung an das Mitglied senden. Nach FZ-051 wurden Kandidatenlisten (`dueIn14Days`, `dueIn3Days`) bereits korrekt ermittelt, aber es gab noch keinen echten Versand-Trigger.
+
+### Entscheidung
+
+FZ-052 wird als Erweiterung des bestehenden Job-Endpunkts `GET /api/jobs/contract-end-check` umgesetzt:
+- Neue Dispatcher-Funktion `sendContractEndReminderNotification()` in `src/lib/notifications.ts` als provider-neutrale Versand-Schnittstelle (In-App/E-Mail).
+- Der Job versendet Erinnerungen fuer alle Kandidaten in `dueIn14Days` unmittelbar nach der Kandidatenermittlung.
+- Der Versand ist bewusst auf 14 Tage begrenzt; `dueIn3Days` wird weiterhin nur geliefert und bleibt Scope von FZ-053.
+- Fuer Testbarkeit wurden Job-Abhaengigkeiten in `contractEndCheckDependencies` gebuendelt; Tests koennen Versand und Kandidatenermittlung gezielt stubben.
+
+### Alternativen verworfen
+
+- Versand direkt in `getContractEndReminderCandidates()`: vermischt Datenabfrage mit Side-Effects und reduziert Wiederverwendbarkeit.
+- Gleichzeitige Umsetzung von 14- und 3-Tage-Versand in einem Schritt: wuerde FZ-052 und FZ-053 fachlich und im Backlog unnoetig koppeln.
+- Direkte Provider-Integration im Endpoint: erhoeht Kopplung und erschwert spaeteren Austausch/Erweiterung.
+
+### Konsequenzen
+
+- BR8 ist fuer den 14-Tage-Fall technisch umgesetzt und API-seitig verifizierbar.
+- Der Endpunkt liefert nun zusaetzlich `sentIn14DaysCount` als unmittelbares Laufzeit-Feedback.
+- FZ-053 kann mit derselben Architektur nachgezogen werden, ohne die FZ-052-Logik zu destabilisieren.
+
 ## 2026-07-11 - FZ-051 Taegliche Vertragsende-Pruefung als geschuetzter Job-Endpunkt umgesetzt
 
 **Kontext:** Laut `docs/spec.md` BR8 muss das System taeglich `contract_end_date` pruefen und die Faelle exakt fuer 14 sowie 3 Tage Restlaufzeit identifizieren. Vor der Umsetzung gab es keine zentrale, wiederverwendbare Prueflogik und keinen aufrufbaren Job-Endpunkt.

@@ -1,16 +1,22 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { GET } from "./route";
+import { GET, contractEndCheckDependencies } from "./route";
 import { prisma } from "@/lib/prisma";
 
 test("returns members due for 14-day and 3-day contract-end checks", async () => {
   const original = {
     memberFindMany: prisma.member.findMany,
-    dateNow: Date.now
+    dateNow: Date.now,
+    sendContractEndReminderNotification: contractEndCheckDependencies.sendContractEndReminderNotification
   };
+  const sentMemberIds: string[] = [];
 
   Date.now = () => new Date("2026-07-11T09:00:00.000Z").getTime();
+
+  contractEndCheckDependencies.sendContractEndReminderNotification = (async (payload) => {
+    sentMemberIds.push(payload.member.id);
+  }) as typeof contractEndCheckDependencies.sendContractEndReminderNotification;
 
   prisma.member.findMany = (async () => [
     {
@@ -48,9 +54,12 @@ test("returns members due for 14-day and 3-day contract-end checks", async () =>
     assert.equal(payload.dueIn14Days[0].daysUntilEnd, 14);
     assert.equal(payload.dueIn3Days[0].id, "member-3");
     assert.equal(payload.dueIn3Days[0].daysUntilEnd, 3);
+    assert.equal(payload.sentIn14DaysCount, 1);
+    assert.deepEqual(sentMemberIds, ["member-14"]);
   } finally {
     prisma.member.findMany = original.memberFindMany;
     Date.now = original.dateNow;
+    contractEndCheckDependencies.sendContractEndReminderNotification = original.sendContractEndReminderNotification;
   }
 });
 
