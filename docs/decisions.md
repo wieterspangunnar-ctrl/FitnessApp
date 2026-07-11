@@ -2,6 +2,29 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-11 - FZ-043 Monatslimit ignoriert Trainerausfall-Kurse
+
+**Kontext:** Laut `docs/spec.md` BR1 muessen Teilnehmer mit limitierter Monatsbuchung bei einem durch Lisa als Trainerausfall markierten Kurs ihren Buchungspunkt automatisch zurueckerhalten. Nach FZ-042 war der Ausfallstatus am Kurs vorhanden, aber die Monatslimit-Pruefung zaehlte bestaetigte Buchungen auf solchen Kursen weiterhin mit.
+
+### Entscheidung
+
+FZ-043 wird als Anpassung der bestehenden Limitzaehlung umgesetzt, nicht als separates Gutschriftobjekt oder nachgelagerter Korrekturlauf:
+- In `POST /api/bookings` zaehlt die Monatslimit-Pruefung nur noch bestaetigte Buchungen auf Kursen mit `Course.status = SCHEDULED`.
+- Bereits bestaetigte Buchungen auf `CANCELLED_TRAINER_SICKNESS` gelten damit sofort als Kulanzfall und blockieren keine neue Buchung mehr.
+- Die Regel bleibt implizit aus dem Kursstatus ableitbar; es wird kein zusaetzliches Feld am `Booking` oder `Member` eingefuehrt.
+
+### Alternativen verworfen
+
+- Separates Kulanz-/Credit-Feld am Mitglied: waere fuer die aktuelle Regel zu schwergewichtig und muesste aktiv synchron gehalten werden.
+- Betroffene Buchungen bei Ausfall aktiv auf einen Sonderstatus umschreiben: unnoetig invasiv und riskanter fuer bestehende Storno-/Historienlogik.
+- Nachtraeglicher Batch-Job zur Rueckgabe des Limits: fachlich zu spaet, weil die Neubuchung sofort wieder moeglich sein muss.
+
+### Konsequenzen
+
+- Die Kulanz greift automatisch, sobald ein Kurs als Trainerausfall markiert ist.
+- Es ist keine Datenmigration und kein neuer Persistenzzustand noetig.
+- Die Regel bleibt eng an BR1 gekoppelt und nutzt die in FZ-042 eingefuehrte Kursstatus-Semantik konsequent weiter.
+
 ## 2026-07-11 - FZ-042 Trainerausfall als expliziter Kursstatus erfasst
 
 **Kontext:** Laut `docs/spec.md` BR1 muss Lisa einen Kursausfall wegen Krankheit explizit administrativ erfassen koennen. Bislang gab es dafuer keine eigene Fachauspraegung am Kurs, wodurch Ausfaelle nur indirekt oder durch Loeschung modellierbar waren.

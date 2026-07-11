@@ -155,3 +155,95 @@ test("rejects bookings for courses cancelled due to trainer sickness", async () 
     prisma.course.findUnique = originalCourseFindUnique;
   }
 });
+
+test("does not count trainer sickness cancellations against the monthly booking limit", async () => {
+  const original = {
+    memberFindUnique: prisma.member.findUnique,
+    courseFindUnique: prisma.course.findUnique,
+    transaction: prisma.$transaction
+  };
+
+  const futureStartTime = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+  let monthlyCountWhere: Record<string, unknown> | null = null;
+
+  prisma.member.findUnique = (async () => ({
+    id: "member-1",
+    status: "ACTIVE",
+    membershipTier: {
+      bookingWindowDays: 14,
+      maxCoursesPerMonth: 5
+    }
+  })) as any;
+
+  prisma.course.findUnique = (async () => ({
+    id: "course-2",
+    startTime: futureStartTime,
+    status: "SCHEDULED",
+    maxParticipants: 10
+  })) as any;
+
+  prisma.$transaction = (async (callback: (tx: any) => Promise<any>) => {
+    return callback({
+      booking: {
+        count: async ({ where }: { where: Record<string, unknown> }) => {
+          if (where.courseId) {
+            return 0;
+          }
+
+          monthlyCountWhere = where;
+          return 4;
+        },
+        findFirst: async () => null,
+        create: async ({ data }: { data: { memberId: string; courseId: string } }) => ({
+          id: "booking-1",
+          status: "CONFIRMED",
+          bookedAt: new Date(),
+          ...data,
+          member: { id: data.memberId },
+          course: {
+            id: data.courseId,
+            courseType: { id: "type-1", name: "Yoga" },
+            room: { id: "room-1", name: "Raum 1" },
+            trainer: {
+              id: "trainer-1",
+              firstName: "Tom",
+              lastName: "Trainer",
+              email: "tom@example.com",
+              hourlyPtRate: 60
+            }
+          }
+        })
+      },
+      waitlist: {
+        findFirst: async () => null
+      }
+    });
+  }) as any;
+
+  try {
+    const response = await POST(
+      new Request("http://localhost/api/bookings", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ memberId: "member-1", courseId: "course-2" })
+      })
+    );
+
+    assert.equal(response.status, 201);
+    assert.deepEqual(monthlyCountWhere, {
+      memberId: "member-1",
+      status: "CONFIRMED",
+      course: {
+        status: "SCHEDULED",
+        startTime: {
+          gte: (monthlyCountWhere as any)?.course?.startTime?.gte,
+          lt: (monthlyCountWhere as any)?.course?.startTime?.lt
+        }
+      }
+    });
+  } finally {
+    prisma.member.findUnique = original.memberFindUnique;
+    prisma.course.findUnique = original.courseFindUnique;
+    prisma.$transaction = original.transaction;
+  }
+});

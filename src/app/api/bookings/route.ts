@@ -118,6 +118,7 @@ export async function POST(request: Request) {
             memberId,
             status: "CONFIRMED",
             course: {
+              status: "SCHEDULED",
               startTime: {
                 gte: startOfMonth,
                 lt: startOfNextMonth
