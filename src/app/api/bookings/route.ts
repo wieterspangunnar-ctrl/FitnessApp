@@ -49,10 +49,17 @@ export async function POST(request: Request) {
 
   const course = await prisma.course.findUnique({
     where: { id: courseId },
-    select: { id: true, startTime: true }
+    select: { id: true, startTime: true, status: true }
   });
   if (!course) {
     return NextResponse.json({ error: "Kurs nicht gefunden" }, { status: 404 });
+  }
+
+  if (course.status === "CANCELLED_TRAINER_SICKNESS") {
+    return NextResponse.json(
+      { error: "Kurs wurde wegen Trainerausfall abgesagt" },
+      { status: 409 }
+    );
   }
 
   const isVisibleForMember = isCourseWithinBookingWindow(

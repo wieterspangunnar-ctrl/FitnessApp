@@ -116,3 +116,42 @@ test("places members on the waitlist when the course is full", async () => {
     prisma.$transaction = original.transaction;
   }
 });
+
+test("rejects bookings for courses cancelled due to trainer sickness", async () => {
+  const originalMemberFindUnique = prisma.member.findUnique;
+  const originalCourseFindUnique = prisma.course.findUnique;
+
+  const futureStartTime = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);
+
+  prisma.member.findUnique = (async () => ({
+    id: "member-1",
+    status: "ACTIVE",
+    membershipTier: {
+      bookingWindowDays: 14,
+      maxCoursesPerMonth: null
+    }
+  })) as any;
+
+  prisma.course.findUnique = (async () => ({
+    id: "course-1",
+    startTime: futureStartTime,
+    status: "CANCELLED_TRAINER_SICKNESS"
+  })) as any;
+
+  try {
+    const response = await POST(
+      new Request("http://localhost/api/bookings", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ memberId: "member-1", courseId: "course-1" })
+      })
+    );
+
+    assert.equal(response.status, 409);
+    const payload = await response.json();
+    assert.equal(payload.error, "Kurs wurde wegen Trainerausfall abgesagt");
+  } finally {
+    prisma.member.findUnique = originalMemberFindUnique;
+    prisma.course.findUnique = originalCourseFindUnique;
+  }
+});

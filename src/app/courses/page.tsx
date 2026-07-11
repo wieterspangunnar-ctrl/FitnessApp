@@ -14,6 +14,7 @@ type Course = {
   startTime: string;
   endTime: string;
   maxParticipants: number;
+  status: "SCHEDULED" | "CANCELLED_TRAINER_SICKNESS";
   confirmedBookingCount: number;
   availableSpots: number;
   courseType: CourseType;
@@ -148,6 +149,24 @@ export default function CoursesPage() {
     }
   };
 
+  const markTrainerSicknessCancellation = async (courseId: string) => {
+    setMessage(null);
+    const response = await fetch(`/api/courses/${courseId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "CANCELLED_TRAINER_SICKNESS" })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      setMessage(data.error ?? "Kursausfall konnte nicht erfasst werden");
+      return;
+    }
+
+    setMessage("Trainer-Ausfall erfasst");
+    await loadData();
+  };
+
   const qualifiedTrainers = useMemo(() => {
     if (!form.courseTypeId) {
       return trainers;
@@ -265,9 +284,19 @@ export default function CoursesPage() {
                     <p style={{ margin: "4px 0 0", color: "var(--muted)" }}>
                       Freie Plätze: {course.availableSpots} / {course.maxParticipants}
                     </p>
+                    <p style={{ margin: "4px 0 0", color: "var(--muted)" }}>
+                      Status: {course.status === "CANCELLED_TRAINER_SICKNESS" ? "Abgesagt (Trainer krank)" : "Geplant"}
+                    </p>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button type="button" onClick={() => startEdit(course)}>Bearbeiten</button>
+                    <button
+                      type="button"
+                      onClick={() => void markTrainerSicknessCancellation(course.id)}
+                      disabled={course.status === "CANCELLED_TRAINER_SICKNESS"}
+                    >
+                      Trainer-Ausfall erfassen
+                    </button>
                     <button type="button" onClick={() => void removeCourse(course.id)}>Löschen</button>
                   </div>
                 </div>

@@ -33,6 +33,11 @@ enum BillingStatus {
   PAID
 }
 
+enum CourseStatus {
+  SCHEDULED
+  CANCELLED_TRAINER_SICKNESS
+}
+
 model Member {
   id              String                    @id @default(uuid())
   firstName       String                    @map("first_name")
@@ -73,6 +78,7 @@ model Course {
   maxParticipants Int           @map("max_participants")
   roomId          String        @map("room_id")
   trainerId       String        @map("trainer_id")
+  status          CourseStatus  @default(SCHEDULED)
   courseType      CourseType    @relation(fields: [courseTypeId], references: [id])
   room            Room          @relation(fields: [roomId], references: [id])
   trainer         Trainer       @relation(fields: [trainerId], references: [id])

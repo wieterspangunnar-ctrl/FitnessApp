@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-11 - FZ-042 Trainerausfall als expliziter Kursstatus erfasst
+
+**Kontext:** Laut `docs/spec.md` BR1 muss Lisa einen Kursausfall wegen Krankheit explizit administrativ erfassen koennen. Bislang gab es dafuer keine eigene Fachauspraegung am Kurs, wodurch Ausfaelle nur indirekt oder durch Loeschung modellierbar waren.
+
+### Entscheidung
+
+FZ-042 wird ueber einen dedizierten Kursstatus umgesetzt:
+- Im Datenmodell wurde fuer `Course` ein Enum-Status eingefuehrt (`SCHEDULED`, `CANCELLED_TRAINER_SICKNESS`).
+- Die API `PUT /api/courses/[id]` akzeptiert und validiert den neuen Status serverseitig.
+- In der Admin-Kursverwaltung kann Lisa pro Kurs den Trainerausfall direkt markieren.
+- Neue Buchungen auf so markierte Kurse werden in `POST /api/bookings` mit klarer Fehlermeldung blockiert.
+
+### Alternativen verworfen
+
+- Kurs bei Ausfall direkt loeschen: verliert Historie und ist fachlich nicht gleichbedeutend mit Absage.
+- Freitextfeld fuer Ausfallgruende ohne Status: erschwert regelbasierte Weiterverarbeitung (z. B. Kulanz in FZ-043).
+- Separates Ausfall-Objekt ohne Kursstatus: unnoetige Komplexitaet fuer den aktuellen Scope.
+
+### Konsequenzen
+
+- Trainerausfall ist jetzt als klarer, auswertbarer Fachzustand am Kurs modelliert.
+- Admin kann Absagen operational ohne DB-Eingriff erfassen.
+- Folgefeature FZ-043 (Limit-Kulanz bei Trainerausfall) hat eine stabile technische Grundlage.
+
 ## 2026-07-10 - FZ-041 Admin steuert Kursbuchungen zentral ueber Buchungsmodul
 
 **Kontext:** Laut `docs/spec.md` §1 soll Lisa als Admin alle Kursbuchungen ueber das Kontrollzentrum steuern koennen. Bisher gab es primär eine Uebersicht und Mitglieds-getriebene Flows, aber keine vollstaendige Admin-Steuerung fuer manuelles Eingreifen.

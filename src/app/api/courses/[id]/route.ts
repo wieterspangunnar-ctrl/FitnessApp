@@ -2,6 +2,8 @@ import { Prisma } from "@/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+const COURSE_STATUSES = ["SCHEDULED", "CANCELLED_TRAINER_SICKNESS"] as const;
+
 type UpdateCourseBody = {
   courseTypeId?: string;
   startTime?: string;
@@ -9,6 +11,7 @@ type UpdateCourseBody = {
   maxParticipants?: unknown;
   roomId?: string;
   trainerId?: string;
+  status?: string;
 };
 
 function parseDateTime(value: unknown) {
@@ -70,6 +73,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
   if (body.roomId !== undefined) data.roomId = body.roomId;
   if (body.trainerId !== undefined) data.trainerId = body.trainerId;
+  if (body.status !== undefined) {
+    if (!COURSE_STATUSES.includes(body.status as (typeof COURSE_STATUSES)[number])) {
+      return NextResponse.json({ error: "Ungültiger Kursstatus" }, { status: 400 });
+    }
+
+    data.status = body.status;
+  }
 
   if (body.courseTypeId !== undefined || body.trainerId !== undefined) {
     const existingCourse = await prisma.course.findUnique({

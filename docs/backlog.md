@@ -78,7 +78,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 
 | ID | Name | Phase | Status | Quelle | Notiz |
 |----|------|-------|--------|--------|-------|
-| FZ-042 | Trainer-Ausfall durch Admin erfassen | 3 | validated | docs/spec.md BR1 | Kursabsage wegen Krankheit |
+| FZ-042 | Trainer-Ausfall durch Admin erfassen | 3 | done | docs/spec.md BR1 | Implementiert: Kursstatus `CANCELLED_TRAINER_SICKNESS` inkl. Admin-Aktion in der Kursverwaltung und Buchungsblockade fuer abgesagte Kurse |
 | FZ-043 | Limit-Kulanz bei Trainer-Ausfall gutschreiben | 3 | validated | docs/spec.md BR1 | Teilnehmern mit Limitierung Buchungspunkt zurueckgeben |
 | FZ-044 | 5,00 EUR Late-Cancellation-Gebuehr buchen | 3 | validated | docs/spec.md BR4 | Basic/Plus, nicht Premium |
 | FZ-045 | Kundenkonto fuer Gebuehren/Posten modellieren | 3 | validated | docs/spec.md BR4, BR7 | Noetig fuer Storno und PT-Abrechnung |
