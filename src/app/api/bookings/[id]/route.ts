@@ -5,6 +5,7 @@ import { deleteWaitlistEntryAndReindex } from "@/lib/waitlist-position";
 import { notificationDispatcher, type WaitlistMoveUpNotificationPayload } from "@/lib/notifications";
 
 const BOOKING_STATUSES = ["CONFIRMED", "CANCELLED_LATE", "CANCELLED_TIMELY", "NO_SHOW"] as const;
+const LATE_CANCELLATION_FEE_CENTS = 500;
 type BookingStatus = (typeof BOOKING_STATUSES)[number];
 
 type UpdateBookingBody = {
@@ -77,7 +78,12 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
       const cancellation = await tx.booking.update({
         where: { id },
-        data: { status: newStatus },
+        data: {
+          status: newStatus,
+          lateCancellationFeeCents:
+            newStatus === "CANCELLED_LATE" ? LATE_CANCELLATION_FEE_CENTS : null,
+          lateCancellationFeeBookedAt: newStatus === "CANCELLED_LATE" ? new Date() : null
+        },
         include: { member: true, course: { include: { courseType: true, room: true, trainer: true } } }
       });
 

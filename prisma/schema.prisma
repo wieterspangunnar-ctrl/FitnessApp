@@ -131,13 +131,15 @@ model Room {
 }
 
 model Booking {
-  id       String        @id @default(uuid())
-  memberId String        @map("member_id")
-  courseId String        @map("course_id")
-  status   BookingStatus @default(CONFIRMED)
-  bookedAt DateTime      @default(now()) @map("booked_at")
-  member   Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  course   Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id                             String        @id @default(uuid())
+  memberId                       String        @map("member_id")
+  courseId                       String        @map("course_id")
+  status                         BookingStatus @default(CONFIRMED)
+  bookedAt                       DateTime      @default(now()) @map("booked_at")
+  lateCancellationFeeCents       Int?          @map("late_cancellation_fee_cents")
+  lateCancellationFeeBookedAt    DateTime?     @map("late_cancellation_fee_booked_at")
+  member                         Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  course                         Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([memberId, courseId])
   @@index([courseId, status])

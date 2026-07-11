@@ -162,3 +162,118 @@ test("triggers waitlist move-up notification after timely cancellation", async (
     notificationDispatcher.sendWaitlistMoveUpNotification = original.sendWaitlistMoveUpNotification;
   }
 });
+
+test("books 5 EUR late cancellation fee for non-premium members", async () => {
+  const original = {
+    bookingFindUnique: prisma.booking.findUnique,
+    transaction: prisma.$transaction
+  };
+
+  let bookingUpdateData: any = null;
+
+  prisma.booking.findUnique = (async () => ({
+    id: "booking-1",
+    status: "CONFIRMED",
+    member: {
+      membershipTier: {
+        hasFreeLateCancellation: false
+      }
+    },
+    course: {
+      id: "course-1",
+      startTime: new Date(Date.now() + 60 * 60 * 1000)
+    }
+  })) as any;
+
+  prisma.$transaction = (async (callback: (tx: any) => Promise<any>) => {
+    return callback({
+      booking: {
+        update: async ({ data }: { data: Record<string, unknown> }) => {
+          bookingUpdateData = data;
+
+          return {
+            id: "booking-1",
+            status: "CANCELLED_LATE",
+            lateCancellationFeeCents: data.lateCancellationFeeCents,
+            lateCancellationFeeBookedAt: data.lateCancellationFeeBookedAt
+          };
+        }
+      },
+      waitlist: {
+        findFirst: async () => null
+      }
+    });
+  }) as any;
+
+  try {
+    const response = await DELETE(new Request("http://localhost/api/bookings/booking-1", { method: "DELETE" }), {
+      params: Promise.resolve({ id: "booking-1" })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(bookingUpdateData?.status, "CANCELLED_LATE");
+    assert.equal(bookingUpdateData?.lateCancellationFeeCents, 500);
+    assert.ok(bookingUpdateData?.lateCancellationFeeBookedAt instanceof Date);
+  } finally {
+    prisma.booking.findUnique = original.bookingFindUnique;
+    prisma.$transaction = original.transaction;
+  }
+});
+
+test("does not book late cancellation fee for premium members", async () => {
+  const original = {
+    bookingFindUnique: prisma.booking.findUnique,
+    transaction: prisma.$transaction
+  };
+
+  let bookingUpdateData: any = null;
+
+  prisma.booking.findUnique = (async () => ({
+    id: "booking-1",
+    status: "CONFIRMED",
+    member: {
+      membershipTier: {
+        hasFreeLateCancellation: true
+      }
+    },
+    course: {
+      id: "course-1",
+      startTime: new Date(Date.now() + 60 * 60 * 1000)
+    }
+  })) as any;
+
+  prisma.$transaction = (async (callback: (tx: any) => Promise<any>) => {
+    return callback({
+      booking: {
+        update: async ({ data }: { data: Record<string, unknown> }) => {
+          bookingUpdateData = data;
+
+          return {
+            id: "booking-1",
+            status: "CANCELLED_TIMELY",
+            lateCancellationFeeCents: data.lateCancellationFeeCents,
+            lateCancellationFeeBookedAt: data.lateCancellationFeeBookedAt
+          };
+        },
+        create: async () => ({ id: "booking-promoted" })
+      },
+      waitlist: {
+        findFirst: async () => null
+      }
+    });
+  }) as any;
+
+  try {
+    const response = await DELETE(new Request("http://localhost/api/bookings/booking-1", { method: "DELETE" }), {
+      params: Promise.resolve({ id: "booking-1" })
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(bookingUpdateData?.status, "CANCELLED_TIMELY");
+    assert.equal(bookingUpdateData?.lateCancellationFeeCents, null);
+    assert.equal(bookingUpdateData?.lateCancellationFeeBookedAt, null);
+  } finally {
+    prisma.booking.findUnique = original.bookingFindUnique;
+    prisma.$transaction = original.transaction;
+  }
+});

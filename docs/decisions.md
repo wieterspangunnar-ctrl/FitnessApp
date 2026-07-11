@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-11 - FZ-044 Late-Cancellation-Gebuehr als persistente Buchungsattribute umgesetzt
+
+**Kontext:** Laut `docs/spec.md` BR4 muss bei einer spaeten Stornierung (< 2 Stunden) fuer Basic/Plus automatisch eine Gebuehr von 5,00 EUR auf das Kundenkonto gebucht werden; Premium bleibt gebuehrenfrei. Die bestehende Storno-Logik setzte bereits den Status (`CANCELLED_LATE` vs. `CANCELLED_TIMELY`), persistierte aber noch keinen Geldposten.
+
+### Entscheidung
+
+FZ-044 wird als minimale, fachlich eindeutige Erweiterung auf der bestehenden `Booking`-Entitaet umgesetzt:
+- `Booking` erhaelt `lateCancellationFeeCents` (nullable Integer) und `lateCancellationFeeBookedAt` (nullable Timestamp).
+- In `DELETE /api/bookings/[id]` werden bei `CANCELLED_LATE` exakt `500` Cent und ein Buchungszeitpunkt gesetzt.
+- Bei `CANCELLED_TIMELY` (inkl. Premium-Ausnahme) bleiben beide Felder `null`.
+- Die Gebuehrenbuchung erfolgt in derselben Transaktion wie die Statusaenderung, um Inkonsistenzen zu vermeiden.
+
+### Alternativen verworfen
+
+- Sofortige Einfuehrung eines vollstaendigen Kundenkonto-/Ledger-Modells: fachlich moeglich, aber fuer FZ-044 zu gross; das ist Scope von FZ-045.
+- Nur abgeleitete Gebuehr ohne Persistenz (z. B. rein aus `status`): unzureichend fuer nachvollziehbare Abrechnung und Reporting.
+- Externe asynchrone Nachbuchung nach Storno: erhoeht Race-Condition-Risiko und bricht atomare Fachlogik.
+
+### Konsequenzen
+
+- Die 5,00-EUR-Regel aus BR4 ist jetzt serverseitig nachvollziehbar gespeichert.
+- FZ-045 kann spaeter auf den Feldern aufsetzen oder sie in ein zentrales Billing-/Kundenkonto-Modell ueberfuehren.
+- Bestehende Premium-Ausnahme bleibt unveraendert erhalten.
+
 ## 2026-07-11 - FZ-043 Monatslimit ignoriert Trainerausfall-Kurse
 
 **Kontext:** Laut `docs/spec.md` BR1 muessen Teilnehmer mit limitierter Monatsbuchung bei einem durch Lisa als Trainerausfall markierten Kurs ihren Buchungspunkt automatisch zurueckerhalten. Nach FZ-042 war der Ausfallstatus am Kurs vorhanden, aber die Monatslimit-Pruefung zaehlte bestaetigte Buchungen auf solchen Kursen weiterhin mit.

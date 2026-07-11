@@ -80,7 +80,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 |----|------|-------|--------|--------|-------|
 | FZ-042 | Trainer-Ausfall durch Admin erfassen | 3 | done | docs/spec.md BR1 | Implementiert: Kursstatus `CANCELLED_TRAINER_SICKNESS` inkl. Admin-Aktion in der Kursverwaltung und Buchungsblockade fuer abgesagte Kurse |
 | FZ-043 | Limit-Kulanz bei Trainer-Ausfall gutschreiben | 3 | done | docs/spec.md BR1 | Implementiert: Monatslimit zaehlt bestaetigte Buchungen auf wegen Trainerausfall abgesagten Kursen nicht mehr mit |
-| FZ-044 | 5,00 EUR Late-Cancellation-Gebuehr buchen | 3 | validated | docs/spec.md BR4 | Basic/Plus, nicht Premium |
+| FZ-044 | 5,00 EUR Late-Cancellation-Gebuehr buchen | 3 | done | docs/spec.md BR4 | Implementiert: Bei `CANCELLED_LATE` werden 500 Cent inkl. Buchungszeitpunkt an der Buchung persistiert; Premium bleibt gebuehrenfrei |
 | FZ-045 | Kundenkonto fuer Gebuehren/Posten modellieren | 3 | validated | docs/spec.md BR4, BR7 | Noetig fuer Storno und PT-Abrechnung |
 | FZ-046 | No-Shows als `NO_SHOW` markieren | 3 | validated | docs/spec.md BR5 | Grundlage fuer Strafsystem |
 | FZ-047 | Drei No-Shows in Folge erkennen | 3 | validated | docs/spec.md BR5 | Sequenzlogik pro Mitglied |
