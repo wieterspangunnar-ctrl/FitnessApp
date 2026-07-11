@@ -55,7 +55,8 @@ test("returns members due for 14-day and 3-day contract-end checks", async () =>
     assert.equal(payload.dueIn3Days[0].id, "member-3");
     assert.equal(payload.dueIn3Days[0].daysUntilEnd, 3);
     assert.equal(payload.sentIn14DaysCount, 1);
-    assert.deepEqual(sentMemberIds, ["member-14"]);
+    assert.equal(payload.sentIn3DaysCount, 1);
+    assert.deepEqual(sentMemberIds.sort(), ["member-14", "member-3"].sort());
   } finally {
     prisma.member.findMany = original.memberFindMany;
     Date.now = original.dateNow;

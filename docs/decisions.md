@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-11 - FZ-053 Erinnerung 3 Tage vor Vertragsende serverseitig ausgeloest
+
+**Kontext:** Laut `docs/spec.md` BR8 muss das System neben der 14-Tage-Erinnerung auch exakt 3 Tage vor `contract_end_date` automatisch benachrichtigen. Nach FZ-052 wurden 3-Tage-Kandidaten bereits ermittelt (`dueIn3Days`), aber noch nicht versendet.
+
+### Entscheidung
+
+FZ-053 wird als gezielte Erweiterung des bestehenden Job-Endpunkts `GET /api/jobs/contract-end-check` umgesetzt:
+- Der Endpoint versendet nun Erinnerungen fuer beide Kandidatenlisten: `dueIn14Days` und `dueIn3Days`.
+- Fuer 3-Tage-Erinnerungen wird dieselbe Dispatcher-Schnittstelle `sendContractEndReminderNotification()` aus `src/lib/notifications.ts` genutzt; der Payload setzt `daysUntilEnd: 3`.
+- Die API-Antwort wurde um `sentIn3DaysCount` erweitert, analog zum bestehenden `sentIn14DaysCount`.
+- Der API-Test in `src/app/api/jobs/contract-end-check/route.test.ts` validiert jetzt explizit den Versand fuer beide Zeitpunkte.
+
+### Alternativen verworfen
+
+- Zweiter separater Job-Endpunkt nur fuer 3-Tage-Erinnerungen: unnoetige Duplizierung von Auth, Kandidatenermittlung und Dispatching.
+- Sonderfall-Implementierung ausserhalb des bestehenden Notification-Dispatchers: erhoeht Kopplung und erschwert spaetere Provider-Integration.
+- Reine Rueckgabe von `dueIn3Days` ohne Versand: verletzt BR8, da die Erinnerung nicht ausgeloest wird.
+
+### Konsequenzen
+
+- BR8 ist jetzt fuer beide Reminder-Zeitpunkte (14 und 3 Tage) technisch umgesetzt.
+- Das Job-Feedback ist konsistent und transparenter (`sentIn14DaysCount`, `sentIn3DaysCount`).
+- Die bestehende Architektur aus FZ-051/FZ-052 bleibt erhalten; es waren keine Schema- oder Migrationsaenderungen noetig.
+
 ## 2026-07-11 - FZ-052 Erinnerung 14 Tage vor Vertragsende serverseitig ausgeloest
 
 **Kontext:** Laut `docs/spec.md` BR8 muss das System exakt 14 Tage vor `contract_end_date` eine automatische Erinnerung an das Mitglied senden. Nach FZ-051 wurden Kandidatenlisten (`dueIn14Days`, `dueIn3Days`) bereits korrekt ermittelt, aber es gab noch keinen echten Versand-Trigger.

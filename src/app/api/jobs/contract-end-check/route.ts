@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   try {
     const result = await contractEndCheckDependencies.getContractEndReminderCandidates();
 
-    await Promise.all(
+    const sendIn14DaysPromise = Promise.all(
       result.dueIn14Days.map((member) =>
         contractEndCheckDependencies.sendContractEndReminderNotification({
           member: {
@@ -41,12 +41,30 @@ export async function GET(request: Request) {
       )
     );
 
+    const sendIn3DaysPromise = Promise.all(
+      result.dueIn3Days.map((member) =>
+        contractEndCheckDependencies.sendContractEndReminderNotification({
+          member: {
+            id: member.id,
+            email: member.email,
+            firstName: member.firstName,
+            lastName: member.lastName
+          },
+          contractEndDate: member.contractEndDate,
+          daysUntilEnd: 3
+        })
+      )
+    );
+
+    await Promise.all([sendIn14DaysPromise, sendIn3DaysPromise]);
+
     return NextResponse.json({
       checkedAt: result.checkedAt,
       referenceDate: result.referenceDate,
       dueIn14DaysCount: result.dueIn14Days.length,
       dueIn3DaysCount: result.dueIn3Days.length,
       sentIn14DaysCount: result.dueIn14Days.length,
+      sentIn3DaysCount: result.dueIn3Days.length,
       dueIn14Days: result.dueIn14Days,
       dueIn3Days: result.dueIn3Days
     });
