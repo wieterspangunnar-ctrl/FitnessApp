@@ -16,9 +16,54 @@ function isBookingStatus(value: unknown): value is BookingStatus {
   return typeof value === "string" && BOOKING_STATUSES.includes(value as BookingStatus);
 }
 
+async function getConsecutiveNoShowStreak(memberId: string, upToCourseStart: Date) {
+  const recentBookings = await prisma.booking.findMany({
+    where: {
+      memberId,
+      course: {
+        startTime: {
+          lte: upToCourseStart
+        }
+      }
+    },
+    select: {
+      status: true,
+      course: {
+        select: {
+          startTime: true
+        }
+      }
+    },
+    orderBy: [
+      {
+        course: {
+          startTime: "desc"
+        }
+      },
+      {
+        bookedAt: "desc"
+      }
+    ],
+    take: 20
+  });
+
+  let streak = 0;
+
+  for (const booking of recentBookings) {
+    if (booking.status !== "NO_SHOW") {
+      break;
+    }
+
+    streak += 1;
+  }
+
+  return streak;
+}
+
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = (await request.json()) as UpdateBookingBody;
+  let noShowStreak: number | null = null;
 
   if (body.status === undefined) {
     return NextResponse.json({ error: "Status ist erforderlich" }, { status: 400 });
@@ -33,6 +78,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       const existingBooking = await prisma.booking.findUnique({
         where: { id },
         select: {
+          memberId: true,
           status: true,
           course: { select: { startTime: true } }
         }
@@ -67,6 +113,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         }
       }
     });
+
+    if (body.status === "NO_SHOW") {
+      noShowStreak = await getConsecutiveNoShowStreak(booking.memberId, booking.course.startTime);
+    }
+
+    if (noShowStreak !== null) {
+      return NextResponse.json({
+        ...booking,
+        noShowStreak,
+        hasThreeNoShowsInRow: noShowStreak >= 3
+      });
+    }
 
     return NextResponse.json(booking);
   } catch (error) {

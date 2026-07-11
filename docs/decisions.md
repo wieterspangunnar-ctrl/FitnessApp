@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-11 - FZ-047 Drei No-Shows in Folge als serverseitige Sequenzlogik umgesetzt
+
+**Kontext:** Laut `docs/spec.md` BR5 soll nach drei unentschuldigten Fehlterminen in Folge eine 14-Tage-Sperre greifen. Nach FZ-046 waren `NO_SHOW`-Statuswerte fachlich gueltig, aber die eigentliche Serienerkennung pro Mitglied fehlte noch.
+
+### Entscheidung
+
+FZ-047 wird als serverseitige Sequenzlogik im bestehenden Booking-Statusupdate umgesetzt:
+- Bei `PUT /api/bookings/[id]` und Zielstatus `NO_SHOW` wird nach erfolgreichem Update die aktuelle `NO_SHOW`-Serie des Mitglieds ermittelt.
+- Die Auswertung nutzt vergangene Buchungen bis einschliesslich des betroffenen Kursstarts, sortiert absteigend nach Kurszeit, und zaehlt nur die unmittelbar aufeinanderfolgenden `NO_SHOW`-Eintraege.
+- Die API liefert dafuer zusaetzliche Metadaten zur Folge zurueck: `noShowStreak` sowie `hasThreeNoShowsInRow`.
+- Tests in `src/app/api/bookings/[id]/route.test.ts` decken den Positivfall (3 in Folge) und einen Unterbrechungsfall (Serie bricht bei anderem Status) ab.
+
+### Alternativen verworfen
+
+- Clientseitige Serienerkennung im Admin-UI: unzuverlaessig, da direkte API-Aufrufe die Regel umgehen koennen.
+- Batch-/Cron-basierte Nachberechnung: zu spaet fuer direkte Folgeaktionen in naechsten Features (FZ-048/FZ-049).
+- Persistenter Zaehler am Mitglied: zusaetzlicher Synchronisationsaufwand und hoehere Fehleranfaelligkeit bei Korrekturen historischer Buchungen.
+
+### Konsequenzen
+
+- Die Fachregel "3 No-Shows in Folge" ist jetzt zentral und reproduzierbar serverseitig auswertbar.
+- FZ-048 kann direkt an `hasThreeNoShowsInRow` anknuepfen, um die 14-Tage-Sperre automatisch zu setzen.
+- Die Logik bleibt minimal-invasiv ohne neues Datenmodell.
+
 ## 2026-07-11 - FZ-046 No-Show-Markierung fachlich eingeschraenkt und serverseitig validiert
 
 **Kontext:** Laut `docs/spec.md` BR5 sind `NO_SHOW`-Markierungen die Grundlage fuer das spaetere Strafsystem (3 in Folge -> 14 Tage Sperre). Nach FZ-041 war das Setzen von `NO_SHOW` im Admin-Flow zwar moeglich, aber ohne fachliche Guardrails: Der Status konnte auch fuer noch nicht gestartete Kurse oder bereits stornierte Buchungen gesetzt werden.
