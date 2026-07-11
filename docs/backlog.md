@@ -90,7 +90,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-051 | Taegliche Vertragsende-Pruefung einrichten | 3 | done | docs/spec.md BR8 | Implementiert: GET `/api/jobs/contract-end-check` plus UTC-stabile Kandidatenlogik in `src/lib/contract-end-reminders.ts`, inkl. optionalem `CRON_SECRET`-Schutz |
 | FZ-052 | Erinnerung 14 Tage vor Vertragsende senden | 3 | done | docs/spec.md BR8 | Implementiert: Job `GET /api/jobs/contract-end-check` versendet 14-Tage-Erinnerungen ueber `src/lib/notifications.ts`; API-Test in `src/app/api/jobs/contract-end-check/route.test.ts` erweitert |
 | FZ-053 | Erinnerung 3 Tage vor Vertragsende senden | 3 | done | docs/spec.md BR8 | Implementiert: Job `GET /api/jobs/contract-end-check` versendet jetzt auch 3-Tage-Erinnerungen ueber `src/lib/notifications.ts`; API-Test in `src/app/api/jobs/contract-end-check/route.test.ts` erweitert |
-| FZ-054 | Vertragsende-Warnliste im Admin-Dashboard | 3 | validated | docs/spec.md BR8 | Lisa sieht auslaufende Vertraege |
+| FZ-054 | Vertragsende-Warnliste im Admin-Dashboard | 3 | done | docs/spec.md BR8 | Implementiert: Startseite zeigt Lisa eine Warnliste fuer Vertraege mit Ende in 14 bzw. 3 Tagen auf Basis der bestehenden Vertragsende-Logik |
 
 ### Phase 4 - Personal Training & Abrechnung
 

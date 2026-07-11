@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-11 - FZ-054 Vertragsende-Warnliste im Admin-Dashboard als Wiederverwendung der Reminder-Logik umgesetzt
+
+**Kontext:** Laut `docs/spec.md` BR8 soll Lisa auslaufende Vertraege im Admin-Dashboard als Warnliste sehen. Nach FZ-051 bis FZ-053 existierte bereits die serverseitige Kandidatenlogik fuer Vertragsenden in 14 und 3 Tagen, aber es gab noch keine sichtbare Admin-Uebersicht dafuer.
+
+### Entscheidung
+
+FZ-054 wird als Erweiterung der bestehenden Startseite `src/app/page.tsx` umgesetzt und nutzt bewusst dieselbe Domain-Logik wie der taegliche Vertragsende-Job:
+- Die Startseite fungiert fuer den aktuellen Scope als leichtgewichtiges Admin-Dashboard und ruft serverseitig `getContractEndReminderCandidates()` auf.
+- Die Warnliste zeigt getrennte Bereiche fuer Vertraege mit Ende in 3 Tagen und in 14 Tagen.
+- Es wird kein separater Dashboard-spezifischer API-Endpunkt eingefuehrt; die bestehende Lib-Funktion bleibt die zentrale Quelle fuer beide Anwendungsfaelle.
+- Die Seite wird als dynamisch gerendert markiert, damit die Warnliste den aktuellen Datenbestand ohne statische Vorberechnung abbildet.
+
+### Alternativen verworfen
+
+- Separater API-Endpunkt nur fuer das Dashboard: unnoetige Duplizierung gegenueber der bereits testbaren Kandidatenlogik in `src/lib/contract-end-reminders.ts`.
+- Vollstaendig neue Admin-Dashboard-Seite statt Erweiterung der bestehenden Startseite: fuer FZ-054 zu breit und nicht noetig, solange die Startseite die Rolle des operativen Einstiegs uebernimmt.
+- Direkte Datenbankabfrage nur in der Page-Komponente ohne Lib-Wiederverwendung: erhoeht das Risiko fachlicher Abweichungen zwischen UI und Reminder-Job.
+
+### Konsequenzen
+
+- BR8 ist nicht nur als Hintergrundjob, sondern jetzt auch operativ fuer Lisa sichtbar umgesetzt.
+- Vertragsende-Warnungen in UI und Job teilen sich dieselbe UTC-stabile Fachlogik.
+- Fuer FZ-054 waren keine Schemaaenderungen, Migrationen oder neuen Backend-Routen noetig.
+
 ## 2026-07-11 - FZ-053 Erinnerung 3 Tage vor Vertragsende serverseitig ausgeloest
 
 **Kontext:** Laut `docs/spec.md` BR8 muss das System neben der 14-Tage-Erinnerung auch exakt 3 Tage vor `contract_end_date` automatisch benachrichtigen. Nach FZ-052 wurden 3-Tage-Kandidaten bereits ermittelt (`dueIn3Days`), aber noch nicht versendet.
