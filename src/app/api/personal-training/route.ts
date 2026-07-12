@@ -7,8 +7,17 @@ type CreatePtSlotBody = {
   endTime?: string;
 };
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const onlyAvailable = searchParams.get("onlyAvailable") === "true";
+
   const slots = await prisma.personalTrainingBooking.findMany({
+    where: onlyAvailable
+      ? {
+          status: "AVAILABLE",
+          startTime: { gte: new Date() }
+        }
+      : undefined,
     include: {
       trainer: { select: { id: true, firstName: true, lastName: true, hourlyPtRate: true } },
       member: { select: { id: true, firstName: true, lastName: true, membershipTier: { select: { name: true, includedPtSlotsPerMonth: true } } } }

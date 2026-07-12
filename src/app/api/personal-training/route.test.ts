@@ -1,8 +1,38 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { POST } from "./route";
+import { GET, POST } from "./route";
 import { prisma } from "@/lib/prisma";
+
+test("returns only available upcoming slots when onlyAvailable=true", async () => {
+  const original = {
+    personalTrainingBookingFindMany: prisma.personalTrainingBooking.findMany
+  };
+
+  let findManyArgs: Record<string, unknown> | null = null;
+
+  prisma.personalTrainingBooking.findMany = (async (args: Record<string, unknown>) => {
+    findManyArgs = args;
+    return [];
+  }) as any;
+
+  try {
+    const response = await GET(new Request("http://localhost/api/personal-training?onlyAvailable=true"));
+    assert.equal(response.status, 200);
+
+    const payload = await response.json();
+    assert.deepEqual(payload, { slots: [] });
+
+    const where = (findManyArgs?.["where"] ?? null) as Record<string, unknown> | null;
+    const orderBy = (findManyArgs?.["orderBy"] ?? null) as Record<string, unknown> | null;
+
+    assert.equal(where?.status, "AVAILABLE");
+    assert.ok(where?.startTime);
+    assert.equal(orderBy?.startTime, "asc");
+  } finally {
+    prisma.personalTrainingBooking.findMany = original.personalTrainingBookingFindMany;
+  }
+});
 
 test("creates personal training slots as AVAILABLE", async () => {
   const original = {

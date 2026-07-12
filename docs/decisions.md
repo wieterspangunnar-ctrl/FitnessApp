@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-12 - FZ-057 Mitglieder sehen freie PT-Slots im Member-Profil
+
+**Kontext:** Laut `docs/spec.md` §1 und BR7 sollen Mitglieder freie Personal-Training-Slots sehen koennen, um die spaetere Direktbuchung vorzubereiten. Nach FZ-055/FZ-056 waren Slots administrativ vorhanden, aber im Member-Bereich nicht sichtbar.
+
+### Entscheidung
+
+FZ-057 wird als kleine, gezielte Erweiterung von API und Member-UI umgesetzt:
+- `GET /api/personal-training` unterstuetzt jetzt den Query-Parameter `onlyAvailable=true`.
+- Bei aktiviertem Filter liefert die API nur Slots mit `status = AVAILABLE` und `startTime >= now`, weiterhin nach Startzeit sortiert.
+- Die Member-Profilseite `src/app/profile/page.tsx` laedt diese gefilterte Liste und zeigt sie im neuen Abschnitt "Freie Personal-Training-Slots" mit Trainer, Zeitfenster und Stundensatz.
+- Der API-Test `src/app/api/personal-training/route.test.ts` wurde um einen Fall erweitert, der den Filter-Pfad absichert.
+
+### Alternativen verworfen
+
+- Separater Endpunkt nur fuer freie Slots (z. B. `/api/personal-training/available`): unnoetige Duplizierung der bestehenden PT-Listenlogik.
+- Ausschliesslich clientseitiges Filtern aller Slots: hoehere Payloads und keine serverseitig garantierte Sicht nur auf verfuegbare Termine.
+- Umsetzung in der Admin-PT-Seite statt Member-Profil: wuerde das Featureziel "Mitglieder sehen freie Slots" verfehlen.
+
+### Konsequenzen
+
+- BR7-Vorbereitung ist im Member-Bereich sichtbar umgesetzt, ohne bestehende Admin-Flows zu veraendern.
+- Die API bleibt rueckwaertskompatibel; ohne Query-Parameter liefert sie weiterhin die Vollansicht.
+- FZ-058 kann direkt auf demselben Slot-Datensatz und Anzeigefluss aufsetzen.
+
 ## 2026-07-12 - FZ-056 Trainer/PT-Slots als AVAILABLE anlegen verifiziert und abgesichert
 
 **Kontext:** Laut `docs/spec.md` BR7 muessen Trainer freie Personal-Training-Zeiten erfassen koennen, die als `AVAILABLE` bereitstehen. Die API-Grundlage aus FZ-055 legte Slots bereits als `AVAILABLE` an, aber fuer FZ-056 fehlte eine explizite, automatisierte Absicherung der Kernregel.

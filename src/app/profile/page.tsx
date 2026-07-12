@@ -38,9 +38,17 @@ type MemberProfile = {
   membershipTier: MembershipTier;
 };
 
+type PersonalTrainingSlot = {
+  id: string;
+  startTime: string;
+  endTime: string;
+  trainer: { id: string; firstName: string; lastName: string; hourlyPtRate: string };
+};
+
 export default function ProfilePage() {
   const [member, setMember] = useState<MemberProfile | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [availablePtSlots, setAvailablePtSlots] = useState<PersonalTrainingSlot[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,14 +61,21 @@ export default function ProfilePage() {
 
       if (!memberData) {
         setCourses([]);
+        setAvailablePtSlots([]);
         setLoading(false);
         return;
       }
 
-      const coursesResponse = await fetch(`/api/courses?memberId=${memberData.id}`);
+      const [coursesResponse, ptSlotsResponse] = await Promise.all([
+        fetch(`/api/courses?memberId=${memberData.id}`),
+        fetch("/api/personal-training?onlyAvailable=true")
+      ]);
+
       const coursesData = await coursesResponse.json();
+      const ptSlotsData = await ptSlotsResponse.json();
 
       setCourses(coursesData.courses ?? []);
+      setAvailablePtSlots((ptSlotsData.slots ?? []) as PersonalTrainingSlot[]);
       setLoading(false);
     };
 
@@ -140,6 +155,34 @@ export default function ProfilePage() {
                       </p>
                       <p style={{ margin: "8px 0 0", color: "var(--muted)" }}>
                         Freie Plätze: {course.availableSpots} / {course.maxParticipants}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="module-card" style={{ minHeight: "auto" }}>
+              <h3 style={{ marginTop: 0 }}>Freie Personal-Training-Slots</h3>
+              <p style={{ marginTop: 0, color: "var(--muted)" }}>
+                Hier siehst du alle aktuell verfügbaren PT-Termine für die Direktbuchung.
+              </p>
+              {availablePtSlots.length === 0 ? (
+                <p>Aktuell sind keine freien PT-Slots verfügbar.</p>
+              ) : (
+                <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+                  {availablePtSlots.map((slot) => (
+                    <article key={slot.id} style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 16 }}>
+                      <h4 style={{ margin: 0 }}>
+                        Trainer: {slot.trainer.firstName} {slot.trainer.lastName}
+                      </h4>
+                      <p style={{ margin: "8px 0 0", color: "var(--muted)" }}>
+                        {new Date(slot.startTime).toLocaleDateString("de-DE", { dateStyle: "medium", timeStyle: "short" })}
+                        {" "}bis{" "}
+                        {new Date(slot.endTime).toLocaleTimeString("de-DE", { timeStyle: "short" })}
+                      </p>
+                      <p style={{ margin: "8px 0 0", color: "var(--muted)" }}>
+                        Stundensatz: {Number(slot.trainer.hourlyPtRate).toFixed(2)} EUR
                       </p>
                     </article>
                   ))}
