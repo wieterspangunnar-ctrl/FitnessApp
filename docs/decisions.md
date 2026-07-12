@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-12 - FZ-060 Trainerabsage bis 24 Stunden vor PT-Start serverseitig erzwungen
+
+**Kontext:** Laut `docs/spec.md` BR7 kann ein Trainer einen gebuchten Personal-Training-Slot nur im Notfall und nur bis 24 Stunden vor Start absagen. Nach FZ-059 war der Status `CANCELLED_BY_TRAINER` bereits verfuegbar, aber die 24h-Grenze und die fachliche Einschraenkung auf tatsaechlich gebuchte Slots wurden in `PUT /api/personal-training/[id]` noch nicht verbindlich geprueft.
+
+### Entscheidung
+
+FZ-060 wird als serverseitige Fachregel im bestehenden PT-Update-Endpunkt umgesetzt:
+- In `src/app/api/personal-training/[id]/route.ts` wird fuer den Zielstatus `CANCELLED_BY_TRAINER` eine feste Mindestvorlaufzeit von 24 Stunden geprueft.
+- Trainerabsage ist nur erlaubt, wenn der aktuelle Slot-Status `BOOKED` ist und ein `memberId` gesetzt ist.
+- Liegt der Slotbeginn unter 24 Stunden in der Zukunft, antwortet die API mit HTTP 409 und klarer Fehlermeldung.
+- Zwei API-Tests in `src/app/api/personal-training/route.test.ts` decken den Blockadefall (< 24h) und den Erfolgsfall (>= 24h) ab.
+
+### Alternativen verworfen
+
+- Nur UI-seitige Sperre in der Admin-Maske: unzureichend, da direkte API-Aufrufe die Regel umgehen koennten.
+- Weiche Warnung statt harter Blockade: widerspricht der Spezifikation, die eine klare 24h-Grenze vorgibt.
+- Eigenen Endpunkt nur fuer Trainerabsagen einfuehren: unnoetige Komplexitaet, da Statuswechsel bereits ueber den Detail-Endpunkt laufen.
+
+### Konsequenzen
+
+- BR7 ist fuer den Absagezeitraum konsistent und serverseitig durchgesetzt.
+- Fehlbedienungen und nachtraegliche Trainerabsagen zu kurzfristig vor Termin werden technisch verhindert.
+- Die bestehende PT-API bleibt strukturell unveraendert; es waren keine Schemaaenderungen oder Migrationen notwendig.
+
 ## 2026-07-12 - FZ-059 Trainer ueber PT-Buchung benachrichtigen
 
 **Kontext:** Laut `docs/spec.md` BR7 sollen Trainer eine Benachrichtigung erhalten, wenn ein Mitglied einen Personal-Training-Slot fest bucht. Dies erlaubt dem Trainer, die gebuchte Zeit in seinen Kalender zu uebernehmen und bei Bedarf bis 24 Stunden vorher abzusagen (siehe FZ-060). Nach FZ-058 war die feste Slot-Reservierung implementiert, die Trainer-Benachrichtigung fehlte noch.

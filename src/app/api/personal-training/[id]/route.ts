@@ -5,6 +5,7 @@ import { notificationDispatcher } from "@/lib/notifications";
 type RouteContext = { params: Promise<{ id: string }> };
 type PersonalTrainingStatus = "AVAILABLE" | "BOOKED" | "COMPLETED" | "CANCELLED_BY_TRAINER";
 const VALID_STATUSES: PersonalTrainingStatus[] = ["AVAILABLE", "BOOKED", "COMPLETED", "CANCELLED_BY_TRAINER"];
+const TRAINER_CANCELLATION_MIN_LEAD_TIME_MS = 24 * 60 * 60 * 1000;
 
 function isPersonalTrainingStatus(value: string): value is PersonalTrainingStatus {
   return VALID_STATUSES.includes(value as PersonalTrainingStatus);
@@ -53,6 +54,23 @@ export async function PUT(request: Request, context: RouteContext) {
   const validBillingStatuses = ["PENDING", "BILLED_TO_ACCOUNT", "PAID"];
   if (body.billingStatus !== undefined && !validBillingStatuses.includes(body.billingStatus)) {
     return NextResponse.json({ error: "Ungültiger Abrechnungsstatus" }, { status: 400 });
+  }
+
+  if (body.status === "CANCELLED_BY_TRAINER") {
+    if (slot.status !== "BOOKED" || !slot.memberId) {
+      return NextResponse.json(
+        { error: "Trainerabsage ist nur für gebuchte PT-Slots erlaubt" },
+        { status: 409 }
+      );
+    }
+
+    const msUntilStart = slot.startTime.getTime() - Date.now();
+    if (msUntilStart < TRAINER_CANCELLATION_MIN_LEAD_TIME_MS) {
+      return NextResponse.json(
+        { error: "Trainerabsage ist nur bis mindestens 24 Stunden vor Slotbeginn erlaubt" },
+        { status: 409 }
+      );
+    }
   }
 
   let member = null;

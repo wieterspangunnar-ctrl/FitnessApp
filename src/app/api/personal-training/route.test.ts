@@ -183,7 +183,9 @@ test("books an available PT slot directly for an active member", async () => {
 
     return {
       id: "pt-slot-1",
-      trainer: { id: "trainer-1", firstName: "Tom", lastName: "Trainer" },
+      startTime: new Date("2026-08-01T09:00:00.000Z"),
+      endTime: new Date("2026-08-01T10:00:00.000Z"),
+      trainer: { id: "trainer-1", firstName: "Tom", lastName: "Trainer", email: "tom@example.com" },
       member: { id: "member-1", firstName: "Lisa", lastName: "Mitglied" },
       status: "BOOKED"
     };
@@ -271,5 +273,105 @@ test("rejects PT booking for inactive members", async () => {
   } finally {
     prisma.personalTrainingBooking.findUnique = original.personalTrainingBookingFindUnique;
     prisma.member.findUnique = original.memberFindUnique;
+  }
+});
+
+test("rejects trainer cancellation if slot starts in less than 24 hours", async () => {
+  const original = {
+    personalTrainingBookingFindUnique: prisma.personalTrainingBooking.findUnique,
+    personalTrainingBookingUpdate: prisma.personalTrainingBooking.update
+  };
+
+  let updateCalled = false;
+
+  prisma.personalTrainingBooking.findUnique = (async () => ({
+    id: "pt-slot-1",
+    trainerId: "trainer-1",
+    memberId: "member-1",
+    startTime: new Date(Date.now() + 23 * 60 * 60 * 1000),
+    endTime: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    status: "BOOKED",
+    billingStatus: "PENDING",
+    isFreePremiumSlot: false
+  })) as any;
+
+  prisma.personalTrainingBooking.update = (async () => {
+    updateCalled = true;
+    return {};
+  }) as any;
+
+  try {
+    const response = await PUT(
+      new Request("http://localhost/api/personal-training/pt-slot-1", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: "CANCELLED_BY_TRAINER" })
+      }),
+      createRouteContext("pt-slot-1")
+    );
+
+    assert.equal(response.status, 409);
+    const payload = await response.json();
+    assert.equal(payload.error, "Trainerabsage ist nur bis mindestens 24 Stunden vor Slotbeginn erlaubt");
+    assert.equal(updateCalled, false);
+  } finally {
+    prisma.personalTrainingBooking.findUnique = original.personalTrainingBookingFindUnique;
+    prisma.personalTrainingBooking.update = original.personalTrainingBookingUpdate;
+  }
+});
+
+test("allows trainer cancellation if slot starts in at least 24 hours", async () => {
+  const original = {
+    personalTrainingBookingFindUnique: prisma.personalTrainingBooking.findUnique,
+    personalTrainingBookingUpdate: prisma.personalTrainingBooking.update
+  };
+
+  let updateArgs: Record<string, unknown> | null = null;
+
+  prisma.personalTrainingBooking.findUnique = (async () => ({
+    id: "pt-slot-2",
+    trainerId: "trainer-1",
+    memberId: "member-1",
+    startTime: new Date(Date.now() + 26 * 60 * 60 * 1000),
+    endTime: new Date(Date.now() + 27 * 60 * 60 * 1000),
+    status: "BOOKED",
+    billingStatus: "PENDING",
+    isFreePremiumSlot: false
+  })) as any;
+
+  prisma.personalTrainingBooking.update = (async (args: Record<string, unknown>) => {
+    updateArgs = args;
+    return {
+      id: "pt-slot-2",
+      status: "CANCELLED_BY_TRAINER",
+      trainer: { id: "trainer-1", firstName: "Tom", lastName: "Trainer" },
+      member: { id: "member-1", firstName: "Lisa", lastName: "Mitglied" }
+    };
+  }) as any;
+
+  try {
+    const response = await PUT(
+      new Request("http://localhost/api/personal-training/pt-slot-2", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: "CANCELLED_BY_TRAINER" })
+      }),
+      createRouteContext("pt-slot-2")
+    );
+
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.equal(payload.status, "CANCELLED_BY_TRAINER");
+    assert.deepEqual(updateArgs, {
+      where: { id: "pt-slot-2" },
+      data: { status: "CANCELLED_BY_TRAINER" },
+      include: {
+        trainer: { select: { id: true, firstName: true, lastName: true } },
+        member: { select: { id: true, firstName: true, lastName: true } }
+      }
+    });
+  } finally {
+    prisma.personalTrainingBooking.findUnique = original.personalTrainingBookingFindUnique;
+    prisma.personalTrainingBooking.update = original.personalTrainingBookingUpdate;
   }
 });
