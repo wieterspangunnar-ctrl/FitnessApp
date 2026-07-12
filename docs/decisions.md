@@ -2,9 +2,127 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-12 - FZ-059 Trainer ueber PT-Buchung benachrichtigen
+
+**Kontext:** Laut `docs/spec.md` BR7 sollen Trainer eine Benachrichtigung erhalten, wenn ein Mitglied einen Personal-Training-Slot fest bucht. Dies erlaubt dem Trainer, die gebuchte Zeit in seinen Kalender zu uebernehmen und bei Bedarf bis 24 Stunden vorher abzusagen (siehe FZ-060). Nach FZ-058 war die feste Slot-Reservierung implementiert, die Trainer-Benachrichtigung fehlte noch.
+
+### Entscheidung
+
+FZ-059 wird als Integrationsschicht in den bestehenden PT-Buchungsfluss umgesetzt:
+- Neue Payload-Typ `PersonalTrainingBookingNotificationPayload` in `src/lib/notifications.ts` mit Trainer-, Member- und Buchungsdaten.
+- Neue Methode `sendPersonalTrainingBookingNotification()` im `notificationDispatcher`, konsistent mit bestehenden Benachrichtigungen (FZ-040 Wartelistenmove, BR8 Vertragsablauf).
+- Trigger: Die API `PUT /api/personal-training/[id]` ruft nach erfolgreicher Buchung atomaren Uebergang `AVAILABLE` -> `BOOKED` die neue Benachrichtigungsfunktion auf.
+- Provider-neutral: Kanäle sind IN_APP und EMAIL; konkrete Delivery-Integration (Push/E-Mail-Provider) ist noch zu entscheiden und wird als Erweiterung des `notificationDispatcher` umgesetzt.
+- Trainer-E-Mail wird neu in der API mitgeladen, um Kontaktdaten verfuegbar zu haben.
+
+### Alternativen verworfen
+
+- Synchrone Benachrichtigung vor Rueckgabe der Antwort: nuetzlich, aber bereits in der bestehenden `notificationDispatcher`-Abstraktion gebaut. Das Console-Logging ist Platzhalter fuer echte Provider.
+- Separate Admin-Aktion zum manuellen Benachrichtigen: erniedrigt den Wert fuer Trainer und erschwert Prozessablaeufe.
+- Benachrichtigung nur bei `isFreePremiumSlot = true`: zu einengend; alle PT-Buchungen sind fuer den Trainer relevant.
+
+### Konsequenzen
+
+- BR7 ist fuer den Trainer-Benachrichtigungsaspekt komplett umgesetzt.
+- Folgefeatures wie FZ-060 (Trainerabsage 24h vorher) und Billing-Logik (FZ-061-FZ-067) koennen auf demselben Benachrichtigungsrahmen aufsetzen.
+- Keine Schemaaenderungen; die Erweiterung ist rein auf API- und Notifications-Ebene.
+
 ## 2026-07-12 - FZ-058 PT-Slot-Direktbuchung serverseitig reserviert und im Member-Profil ausgeloest
 
 **Kontext:** Laut `docs/spec.md` BR7 sollen Mitglieder freie Personal-Training-Slots direkt fest buchen koennen. Nach FZ-057 waren freie Slots im Member-Profil sichtbar, aber der eigentliche Uebergang von `AVAILABLE` auf `BOOKED` inklusive Member-Zuordnung war noch nicht fachlich abgesichert und nicht aus der Member-Ansicht ausloesbar.
+
+### Entscheidung
+
+FZ-058 wird als gezielte Erweiterung des bestehenden PT-Detailpfads und des Member-Profils umgesetzt:
+- `PUT /api/personal-training/[id]` uebernimmt die Direktbuchung eines Slots, wenn `memberId` gesetzt wird.
+- Die API validiert dabei serverseitig: Mitglied existiert, Mitglied ist `ACTIVE`, Slot ist noch `AVAILABLE`, noch keinem Mitglied zugeordnet und zeitlich nicht bereits gestartet.
+- Der Statuswechsel erfolgt atomar ueber `updateMany` mit Guard auf `id`, `status = AVAILABLE` und `memberId = null`, damit konkurrierende Requests keinen Slot doppelt buchen.
+- `src/app/profile/page.tsx` ergaenzt im Abschnitt fuer freie PT-Slots einen Button "Jetzt fest buchen", zeigt Rueckmeldungen an und laedt die verfuegbaren Slots nach dem Request neu.
+- Die API-Tests decken den Erfolgsfall sowie die Blockade fuer inaktive Mitglieder ab.
+
+### Alternativen verworfen
+
+- Direkte Buchung ueber einen neuen separaten Endpunkt: unnoetige Duplizierung der bestehenden Slot-Detailverantwortung.
+- Reine Client-Sperren gegen Doppelbuchung: fachlich unzureichend, da parallele oder direkte API-Aufrufe damit nicht abgesichert waeren.
+- Vorziehen der Billing-Logik aus FZ-061 bis FZ-064 in denselben Schritt: wuerde den Scope von FZ-058 unnoetig aufblasen; dieses Feature beschraenkt sich bewusst auf die feste Reservierung.
+
+### Konsequenzen
+
+- BR7 ist fuer den Kernfall der PT-Direktbuchung jetzt bis zur festen Slot-Reservierung umgesetzt.
+- Die serverseitige Guard-Logik reduziert das Risiko doppelter Buchungen auf demselben Slot.
+- Folgefeatures wie Trainer-Benachrichtigung und Premium-/Billing-Logik koennen auf demselben Buchungspfad aufsetzen, ohne ihn neu aufzubauen.
+
+## 2026-07-12 - FZ-057 Mitglieder sehen freie PT-Slots im Member-Profil
+
+**Kontext:** Laut `docs/spec.md` §1 und BR7 sollen Mitglieder freie Personal-Training-Slots sehen koennen, um die spaetere Direktbuchung vorzubereiten. Nach FZ-055/FZ-056 waren Slots administrativ vorhanden, aber im Member-Bereich nicht sichtbar.
+
+### Entscheidung
+
+FZ-057 wird als kleine, gezielte Erweiterung von API und Member-UI umgesetzt:
+- `GET /api/personal-training` unterstuetzt jetzt den Query-Parameter `onlyAvailable=true`.
+- Bei aktiviertem Filter liefert die API nur Slots mit `status = AVAILABLE` und `startTime >= now`, weiterhin nach Startzeit sortiert.
+- Die Member-Profilseite `src/app/profile/page.tsx` laedt diese gefilterte Liste und zeigt sie im neuen Abschnitt "Freie Personal-Training-Slots" mit Trainer, Zeitfenster und Stundensatz.
+- Der API-Test `src/app/api/personal-training/route.test.ts` wurde um einen Fall erweitert, der den Filter-Pfad absichert.
+
+### Alternativen verworfen
+
+- Separater Endpunkt nur fuer freie Slots (z. B. `/api/personal-training/available`): unnoetige Duplizierung der bestehenden PT-Listenlogik.
+- Ausschliesslich clientseitiges Filtern aller Slots: hoehere Payloads und keine serverseitig garantierte Sicht nur auf verfuegbare Termine.
+- Umsetzung in der Admin-PT-Seite statt Member-Profil: wuerde das Featureziel "Mitglieder sehen freie Slots" verfehlen.
+
+### Konsequenzen
+
+- BR7-Vorbereitung ist im Member-Bereich sichtbar umgesetzt, ohne bestehende Admin-Flows zu veraendern.
+- Die API bleibt rueckwaertskompatibel; ohne Query-Parameter liefert sie weiterhin die Vollansicht.
+- FZ-058 kann direkt auf demselben Slot-Datensatz und Anzeigefluss aufsetzen.
+
+## 2026-07-12 - FZ-056 Trainer/PT-Slots als AVAILABLE anlegen verifiziert und abgesichert
+
+**Kontext:** Laut `docs/spec.md` BR7 muessen Trainer freie Personal-Training-Zeiten erfassen koennen, die als `AVAILABLE` bereitstehen. Die API-Grundlage aus FZ-055 legte Slots bereits als `AVAILABLE` an, aber fuer FZ-056 fehlte eine explizite, automatisierte Absicherung der Kernregel.
+
+### Entscheidung
+
+FZ-056 wird als gezielte Verifikation und Haertung der bestehenden Slot-Anlage umgesetzt:
+- Neuer API-Test `src/app/api/personal-training/route.test.ts` validiert, dass `POST /api/personal-training` neue Slots mit `status = AVAILABLE` und leerer Member-Zuordnung (`memberId = null`) anlegt.
+- Ein zweiter Test deckt die Ueberschneidungsregel fuer denselben Trainer ab und erwartet korrekt HTTP 409.
+- Die bestehende API-Validierung (Pflichtfelder, gueltige Zeiten, `end > start`, Trainer-Existenz) bleibt unveraendert und ist Teil der FZ-056-Akzeptanz.
+
+### Alternativen verworfen
+
+- Neuer separater Endpunkt nur fuer FZ-056: unnoetig, da `POST /api/personal-training` die fachliche Regel bereits passend kapselt.
+- Umsetzung ohne Tests: zu hohes Regressionsrisiko fuer den spaeteren Member-Buchungsfluss (FZ-057/FZ-058).
+
+### Konsequenzen
+
+- FZ-056 ist jetzt nicht nur funktional vorhanden, sondern testbar abgesichert.
+- Die Umsetzung bleibt klein und kompatibel mit den Folgefeatures in Phase 4.
+
+## 2026-07-12 - FZ-055 PersonalTrainingBooking-Entitaet modelliert und API + Admin-UI eingefuehrt
+
+**Kontext:** Laut `docs/spec.md` §2.1, §3 und BR7 werden Personal-Training-Slots benoetigt, bei denen Trainer freie Zeiten als `AVAILABLE` eintragen und Mitglieder diese buchen koennen. Die Entitaet `PersonalTrainingBooking` war bereits im Prisma-Schema und in der Datenbank vorhanden (als Teil frueherer Modellierungsarbeit). Die zugehoerigen API-Routen und die Admin-UI fehlten noch.
+
+### Entscheidung
+
+FZ-055 wird als vollstaendige Modellierungsebene implementiert:
+- **Prisma-Modell:** Bereits vorhanden in `prisma/schema.prisma` mit allen Spec-Feldern (`trainerId`, `memberId` nullable, `startTime`, `endTime`, `status`, `isFreePremiumSlot`, `billingStatus`). Keine Schemaaenderung noetig.
+- **API `GET /api/personal-training`:** Liefert alle Slots mit Trainer- und Member-Daten, sortiert nach `startTime`.
+- **API `POST /api/personal-training`:** Legt einen neuen Slot mit Status `AVAILABLE` an. Serverseitige Validierungen: Pflichtfelder, Zeitkonsistenz (end > start), Trainer-Existenz, Ueberschneidungspruefung fuer denselben Trainer (ausgenommen `CANCELLED_BY_TRAINER`-Slots).
+- **API `GET /api/personal-training/[id]`:** Einzelabfrage eines Slots.
+- **API `PUT /api/personal-training/[id]`:** Erlaubt Status- und Abrechnungsstatus-Updates sowie Member-Zuweisung. Bei Member-Zuweisung ohne expliziten Status wird Status automatisch auf `BOOKED` gesetzt. Nur `AVAILABLE`-Slots koennen neu zugewiesen werden.
+- **API `DELETE /api/personal-training/[id]`:** Loeschen nur fuer Slots mit Status `AVAILABLE` erlaubt, um versehentliches Loeschen gebuchter oder abgeschlossener Termine zu verhindern.
+- **Admin-UI `src/app/personal-training/page.tsx`:** Formular zum Anlegen neuer Slots (Trainer, Start-/Endzeit), Tabelle mit Status- und Abrechnungs-Dropdowns, Loesch-Aktion fuer freie Slots.
+
+### Alternativen verworfen
+
+- Member-seitiger Buchungsfluss direkt in FZ-055: zu breit fuer diese Modellierungsstufe; FZ-056 ff. decken die Slot-Buchung durch Mitglieder ab.
+- Billing-Logik (PT-Gebueehr auf Kundenkonto) in FZ-055: gehoert zu BR7, wird in einem eigenen Feature abgebildet; `CustomerAccountEntry` hat bereits die Relation und ist vorbereitet.
+- Separate API-Routen fuer Trainer-seitige vs. Admin-seitige Operationen: unnoetige Komplexitaet auf dieser Projektstufe.
+
+### Konsequenzen
+
+- BR7-Grundlage ist gelegt: Trainer koennen Slots anlegen und verwalten, Lisa hat vollstaendige Admin-Sicht und Kontrolle ueber Status und Abrechnung.
+- Die Ueberschneidungspruefung verhindert doppelte Slotbelegung fuer denselben Trainer.
+- Keine Schemaaenderungen oder Migrationen noetig; die bestehende Tabellenstruktur war bereits korrekt.
 
 ### Entscheidung
 

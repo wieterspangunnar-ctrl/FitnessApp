@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { notificationDispatcher } from "@/lib/notifications";
 
 type RouteContext = { params: Promise<{ id: string }> };
 type PersonalTrainingStatus = "AVAILABLE" | "BOOKED" | "COMPLETED" | "CANCELLED_BY_TRAINER";
@@ -138,10 +139,32 @@ export async function PUT(request: Request, context: RouteContext) {
     const bookedSlot = await prisma.personalTrainingBooking.findUnique({
       where: { id },
       include: {
-        trainer: { select: { id: true, firstName: true, lastName: true } },
+        trainer: { select: { id: true, firstName: true, lastName: true, email: true } },
         member: { select: { id: true, firstName: true, lastName: true } }
       }
     });
+
+    // Send notification to trainer about PT booking (FZ-059)
+    if (bookedSlot?.trainer && bookedSlot?.member) {
+      await notificationDispatcher.sendPersonalTrainingBookingNotification({
+        trainer: {
+          id: bookedSlot.trainer.id,
+          email: bookedSlot.trainer.email,
+          firstName: bookedSlot.trainer.firstName,
+          lastName: bookedSlot.trainer.lastName
+        },
+        member: {
+          id: bookedSlot.member.id,
+          firstName: bookedSlot.member.firstName,
+          lastName: bookedSlot.member.lastName
+        },
+        ptBooking: {
+          id: bookedSlot.id,
+          startTime: bookedSlot.startTime,
+          endTime: bookedSlot.endTime
+        }
+      });
+    }
 
     return NextResponse.json(bookedSlot);
   }

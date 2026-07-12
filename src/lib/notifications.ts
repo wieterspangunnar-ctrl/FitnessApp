@@ -23,6 +23,25 @@ type ContractEndReminderNotificationPayload = {
   daysUntilEnd: 14 | 3;
 };
 
+type PersonalTrainingBookingNotificationPayload = {
+  trainer: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  member: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  ptBooking: {
+    id: string;
+    startTime: Date;
+    endTime: Date;
+  };
+};
+
 export const notificationDispatcher = {
   async sendWaitlistMoveUpNotification(payload: WaitlistMoveUpNotificationPayload) {
     // Provider-neutral hook for FZ-040. Real delivery integration can replace this implementation.
@@ -51,7 +70,26 @@ export const notificationDispatcher = {
       daysUntilEnd: payload.daysUntilEnd,
       triggeredAtIso: new Date().toISOString()
     });
+  },
+
+  async sendPersonalTrainingBookingNotification(payload: PersonalTrainingBookingNotificationPayload) {
+    // Provider-neutral hook for FZ-059. Real delivery integration can replace this implementation.
+    console.info("PERSONAL_TRAINING_BOOKING_NOTIFICATION_TRIGGERED", {
+      type: "PERSONAL_TRAINING_BOOKING",
+      channels: ["IN_APP", "EMAIL"],
+      trainerId: payload.trainer.id,
+      trainerEmail: payload.trainer.email,
+      trainerFirstName: payload.trainer.firstName,
+      trainerLastName: payload.trainer.lastName,
+      memberId: payload.member.id,
+      memberFirstName: payload.member.firstName,
+      memberLastName: payload.member.lastName,
+      ptBookingId: payload.ptBooking.id,
+      ptStartTimeIso: payload.ptBooking.startTime.toISOString(),
+      ptEndTimeIso: payload.ptBooking.endTime.toISOString(),
+      triggeredAtIso: new Date().toISOString()
+    });
   }
 };
 
-export type { ContractEndReminderNotificationPayload, WaitlistMoveUpNotificationPayload };
+export type { ContractEndReminderNotificationPayload, WaitlistMoveUpNotificationPayload, PersonalTrainingBookingNotificationPayload };
