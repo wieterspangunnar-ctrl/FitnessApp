@@ -99,7 +99,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-055 | `PersonalTrainingBooking`-Entitaet modellieren | 4 | done | docs/spec.md §2.1, §3 | Implementiert: Prisma-Modell, API (`src/app/api/personal-training/*`) und Admin-UI (`src/app/personal-training/page.tsx`) mit CRUD, Status- und Abrechnungsverwaltung |
 | FZ-056 | Trainer/PT-Slots als `AVAILABLE` anlegen | 4 | done | docs/spec.md BR7 | Implementiert: `POST /api/personal-training` legt freie Slots mit `status = AVAILABLE` an, inkl. Pflichtfeld-, Zeit- und Ueberschneidungspruefung; abgedeckt durch `src/app/api/personal-training/route.test.ts` |
 | FZ-057 | Mitglieder sehen freie PT-Slots | 4 | done | docs/spec.md §1, BR7 | Implementiert: API-Filter fuer verfuegbare kommende PT-Slots (`GET /api/personal-training?onlyAvailable=true`) und Anzeige im Member-Profil (`src/app/profile/page.tsx`) |
-| FZ-058 | PT-Slot direkt fest buchen | 4 | validated | docs/spec.md BR7 | `AVAILABLE` -> `BOOKED`, Member setzen |
+| FZ-058 | PT-Slot direkt fest buchen | 4 | done | docs/spec.md BR7 | Implementiert: Member-Profil bucht freie PT-Slots direkt via `PUT /api/personal-training/[id]`; API erzwingt aktives Mitglied und atomaren `AVAILABLE` -> `BOOKED`-Uebergang |
 | FZ-059 | Trainer ueber PT-Buchung benachrichtigen | 4 | validated | docs/spec.md BR7 | Push/In-App/E-Mail noch entscheiden |
 | FZ-060 | Trainerabsage bis 24 Stunden vorher erlauben | 4 | validated | docs/spec.md BR7 | Status `CANCELLED_BY_TRAINER` |
 | FZ-061 | Premium-Inklusivslot pro Monat erkennen | 4 | validated | docs/spec.md BR7 | 1 freier Slot monatlich |

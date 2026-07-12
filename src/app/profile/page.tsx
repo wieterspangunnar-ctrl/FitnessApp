@@ -50,6 +50,14 @@ export default function ProfilePage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [availablePtSlots, setAvailablePtSlots] = useState<PersonalTrainingSlot[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ptBookingMessage, setPtBookingMessage] = useState<string | null>(null);
+  const [bookingSlotId, setBookingSlotId] = useState<string | null>(null);
+
+  const loadAvailablePtSlots = async () => {
+    const ptSlotsResponse = await fetch("/api/personal-training?onlyAvailable=true");
+    const ptSlotsData = await ptSlotsResponse.json();
+    setAvailablePtSlots((ptSlotsData.slots ?? []) as PersonalTrainingSlot[]);
+  };
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -81,6 +89,34 @@ export default function ProfilePage() {
 
     void loadProfile();
   }, []);
+
+  const handleBookPtSlot = async (slotId: string) => {
+    if (!member) {
+      return;
+    }
+
+    setPtBookingMessage(null);
+    setBookingSlotId(slotId);
+
+    const response = await fetch(`/api/personal-training/${slotId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memberId: member.id })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setPtBookingMessage(data.error ?? "PT-Slot konnte nicht gebucht werden.");
+      setBookingSlotId(null);
+      await loadAvailablePtSlots();
+      return;
+    }
+
+    setPtBookingMessage("PT-Slot wurde fest für dich gebucht.");
+    setBookingSlotId(null);
+    await loadAvailablePtSlots();
+  };
 
   const visibleCourses = useMemo(() => {
     return [...courses].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
@@ -167,6 +203,11 @@ export default function ProfilePage() {
               <p style={{ marginTop: 0, color: "var(--muted)" }}>
                 Hier siehst du alle aktuell verfügbaren PT-Termine für die Direktbuchung.
               </p>
+              {ptBookingMessage ? (
+                <p style={{ marginTop: 12, color: ptBookingMessage.includes("gebucht") ? "#166534" : "#b91c1c" }}>
+                  {ptBookingMessage}
+                </p>
+              ) : null}
               {availablePtSlots.length === 0 ? (
                 <p>Aktuell sind keine freien PT-Slots verfügbar.</p>
               ) : (
@@ -184,6 +225,23 @@ export default function ProfilePage() {
                       <p style={{ margin: "8px 0 0", color: "var(--muted)" }}>
                         Stundensatz: {Number(slot.trainer.hourlyPtRate).toFixed(2)} EUR
                       </p>
+                      <button
+                        type="button"
+                        onClick={() => void handleBookPtSlot(slot.id)}
+                        disabled={bookingSlotId === slot.id || member.status !== "ACTIVE"}
+                        style={{
+                          marginTop: 12,
+                          padding: "10px 14px",
+                          borderRadius: 8,
+                          border: "none",
+                          background: bookingSlotId === slot.id || member.status !== "ACTIVE" ? "#9ca3af" : "#f97316",
+                          color: "#fff",
+                          fontWeight: 600,
+                          cursor: bookingSlotId === slot.id || member.status !== "ACTIVE" ? "not-allowed" : "pointer"
+                        }}
+                      >
+                        {bookingSlotId === slot.id ? "Buche…" : "Jetzt fest buchen"}
+                      </button>
                     </article>
                   ))}
                 </div>

@@ -2,7 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { GET, POST } from "./route";
+import { PUT } from "./[id]/route";
 import { prisma } from "@/lib/prisma";
+
+function createRouteContext(id: string) {
+  return { params: Promise.resolve({ id }) };
+}
 
 test("returns only available upcoming slots when onlyAvailable=true", async () => {
   const original = {
@@ -147,5 +152,124 @@ test("rejects overlapping slots for the same trainer", async () => {
   } finally {
     prisma.trainer.findUnique = original.trainerFindUnique;
     prisma.personalTrainingBooking.findFirst = original.personalTrainingBookingFindFirst;
+  }
+});
+
+test("books an available PT slot directly for an active member", async () => {
+  const original = {
+    personalTrainingBookingFindUnique: prisma.personalTrainingBooking.findUnique,
+    memberFindUnique: prisma.member.findUnique,
+    personalTrainingBookingUpdateMany: prisma.personalTrainingBooking.updateMany
+  };
+
+  let updateManyArgs: Record<string, unknown> | null = null;
+  let findUniqueCalls = 0;
+
+  prisma.personalTrainingBooking.findUnique = (async () => {
+    findUniqueCalls += 1;
+
+    if (findUniqueCalls === 1) {
+      return {
+        id: "pt-slot-1",
+        trainerId: "trainer-1",
+        memberId: null,
+        startTime: new Date("2026-08-01T09:00:00.000Z"),
+        endTime: new Date("2026-08-01T10:00:00.000Z"),
+        status: "AVAILABLE",
+        billingStatus: "PENDING",
+        isFreePremiumSlot: false
+      };
+    }
+
+    return {
+      id: "pt-slot-1",
+      trainer: { id: "trainer-1", firstName: "Tom", lastName: "Trainer" },
+      member: { id: "member-1", firstName: "Lisa", lastName: "Mitglied" },
+      status: "BOOKED"
+    };
+  }) as any;
+
+  prisma.member.findUnique = (async () => ({
+    id: "member-1",
+    status: "ACTIVE"
+  })) as any;
+
+  prisma.personalTrainingBooking.updateMany = (async (args: Record<string, unknown>) => {
+    updateManyArgs = args;
+    return { count: 1 };
+  }) as any;
+
+  try {
+    const response = await PUT(
+      new Request("http://localhost/api/personal-training/pt-slot-1", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ memberId: "member-1" })
+      }),
+      createRouteContext("pt-slot-1")
+    );
+
+    assert.equal(response.status, 200);
+
+    const payload = await response.json();
+    assert.equal(payload.status, "BOOKED");
+    assert.equal(payload.member.id, "member-1");
+    assert.deepEqual(updateManyArgs, {
+      where: {
+        id: "pt-slot-1",
+        status: "AVAILABLE",
+        memberId: null
+      },
+      data: {
+        memberId: "member-1",
+        status: "BOOKED"
+      }
+    });
+  } finally {
+    prisma.personalTrainingBooking.findUnique = original.personalTrainingBookingFindUnique;
+    prisma.member.findUnique = original.memberFindUnique;
+    prisma.personalTrainingBooking.updateMany = original.personalTrainingBookingUpdateMany;
+  }
+});
+
+test("rejects PT booking for inactive members", async () => {
+  const original = {
+    personalTrainingBookingFindUnique: prisma.personalTrainingBooking.findUnique,
+    memberFindUnique: prisma.member.findUnique
+  };
+
+  prisma.personalTrainingBooking.findUnique = (async () => ({
+    id: "pt-slot-1",
+    trainerId: "trainer-1",
+    memberId: null,
+    startTime: new Date("2026-08-01T09:00:00.000Z"),
+    endTime: new Date("2026-08-01T10:00:00.000Z"),
+    status: "AVAILABLE",
+    billingStatus: "PENDING",
+    isFreePremiumSlot: false
+  })) as any;
+
+  prisma.member.findUnique = (async () => ({
+    id: "member-1",
+    status: "PAUSED"
+  })) as any;
+
+  try {
+    const response = await PUT(
+      new Request("http://localhost/api/personal-training/pt-slot-1", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ memberId: "member-1" })
+      }),
+      createRouteContext("pt-slot-1")
+    );
+
+    assert.equal(response.status, 403);
+
+    const payload = await response.json();
+    assert.equal(payload.error, "Mitglied nicht aktiv");
+  } finally {
+    prisma.personalTrainingBooking.findUnique = original.personalTrainingBookingFindUnique;
+    prisma.member.findUnique = original.memberFindUnique;
   }
 });

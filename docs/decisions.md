@@ -2,6 +2,31 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-12 - FZ-058 PT-Slot-Direktbuchung serverseitig reserviert und im Member-Profil ausgeloest
+
+**Kontext:** Laut `docs/spec.md` BR7 sollen Mitglieder freie Personal-Training-Slots direkt fest buchen koennen. Nach FZ-057 waren freie Slots im Member-Profil sichtbar, aber der eigentliche Uebergang von `AVAILABLE` auf `BOOKED` inklusive Member-Zuordnung war noch nicht fachlich abgesichert und nicht aus der Member-Ansicht ausloesbar.
+
+### Entscheidung
+
+FZ-058 wird als gezielte Erweiterung des bestehenden PT-Detailpfads und des Member-Profils umgesetzt:
+- `PUT /api/personal-training/[id]` uebernimmt die Direktbuchung eines Slots, wenn `memberId` gesetzt wird.
+- Die API validiert dabei serverseitig: Mitglied existiert, Mitglied ist `ACTIVE`, Slot ist noch `AVAILABLE`, noch keinem Mitglied zugeordnet und zeitlich nicht bereits gestartet.
+- Der Statuswechsel erfolgt atomar ueber `updateMany` mit Guard auf `id`, `status = AVAILABLE` und `memberId = null`, damit konkurrierende Requests keinen Slot doppelt buchen.
+- `src/app/profile/page.tsx` ergaenzt im Abschnitt fuer freie PT-Slots einen Button "Jetzt fest buchen", zeigt Rueckmeldungen an und laedt die verfuegbaren Slots nach dem Request neu.
+- Die API-Tests decken den Erfolgsfall sowie die Blockade fuer inaktive Mitglieder ab.
+
+### Alternativen verworfen
+
+- Direkte Buchung ueber einen neuen separaten Endpunkt: unnoetige Duplizierung der bestehenden Slot-Detailverantwortung.
+- Reine Client-Sperren gegen Doppelbuchung: fachlich unzureichend, da parallele oder direkte API-Aufrufe damit nicht abgesichert waeren.
+- Vorziehen der Billing-Logik aus FZ-061 bis FZ-064 in denselben Schritt: wuerde den Scope von FZ-058 unnoetig aufblasen; dieses Feature beschraenkt sich bewusst auf die feste Reservierung.
+
+### Konsequenzen
+
+- BR7 ist fuer den Kernfall der PT-Direktbuchung jetzt bis zur festen Slot-Reservierung umgesetzt.
+- Die serverseitige Guard-Logik reduziert das Risiko doppelter Buchungen auf demselben Slot.
+- Folgefeatures wie Trainer-Benachrichtigung und Premium-/Billing-Logik koennen auf demselben Buchungspfad aufsetzen, ohne ihn neu aufzubauen.
+
 ## 2026-07-12 - FZ-057 Mitglieder sehen freie PT-Slots im Member-Profil
 
 **Kontext:** Laut `docs/spec.md` §1 und BR7 sollen Mitglieder freie Personal-Training-Slots sehen koennen, um die spaetere Direktbuchung vorzubereiten. Nach FZ-055/FZ-056 waren Slots administrativ vorhanden, aber im Member-Bereich nicht sichtbar.
