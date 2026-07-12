@@ -45,6 +45,17 @@ type PersonalTrainingSlot = {
   trainer: { id: string; firstName: string; lastName: string; hourlyPtRate: string };
 };
 
+type PremiumPtSlotRecognition = {
+  qualifiesForFreePremiumSlot: boolean;
+  includedPtSlotsPerMonth: number;
+  alreadyUsedIncludedSlotsThisMonth: number;
+};
+
+type PtBookingResponse = {
+  error?: string;
+  premiumPtSlotRecognition?: PremiumPtSlotRecognition;
+};
+
 export default function ProfilePage() {
   const [member, setMember] = useState<MemberProfile | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -104,7 +115,7 @@ export default function ProfilePage() {
       body: JSON.stringify({ memberId: member.id })
     });
 
-    const data = await response.json();
+    const data = (await response.json()) as PtBookingResponse;
 
     if (!response.ok) {
       setPtBookingMessage(data.error ?? "PT-Slot konnte nicht gebucht werden.");
@@ -113,7 +124,11 @@ export default function ProfilePage() {
       return;
     }
 
-    setPtBookingMessage("PT-Slot wurde fest für dich gebucht.");
+    if (data.premiumPtSlotRecognition?.qualifiesForFreePremiumSlot) {
+      setPtBookingMessage("PT-Slot wurde fest für dich gebucht. Dieser Termin nutzt deinen freien Premium-Slot des Monats.");
+    } else {
+      setPtBookingMessage("PT-Slot wurde fest für dich gebucht.");
+    }
     setBookingSlotId(null);
     await loadAvailablePtSlots();
   };

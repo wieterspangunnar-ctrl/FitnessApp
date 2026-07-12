@@ -102,7 +102,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-058 | PT-Slot direkt fest buchen | 4 | done | docs/spec.md BR7 | Implementiert: Member-Profil bucht freie PT-Slots direkt via `PUT /api/personal-training/[id]`; API erzwingt aktives Mitglied und atomaren `AVAILABLE` -> `BOOKED`-Uebergang |
 | FZ-059 | Trainer ueber PT-Buchung benachrichtigen | 4 | done | docs/spec.md BR7 | Implementiert: Push/In-App/E-Mail via `notificationDispatcher.sendPersonalTrainingBookingNotification()` bei erfolgreicher Buchung in `src/app/api/personal-training/[id]/route.ts` |
 | FZ-060 | Trainerabsage bis 24 Stunden vorher erlauben | 4 | done | docs/spec.md BR7 | Implementiert: `PUT /api/personal-training/[id]` erzwingt Trainerabsage nur fuer gebuchte Slots mit mindestens 24h Vorlauf; Tests in `src/app/api/personal-training/route.test.ts` |
-| FZ-061 | Premium-Inklusivslot pro Monat erkennen | 4 | validated | docs/spec.md BR7 | 1 freier Slot monatlich |
+| FZ-061 | Premium-Inklusivslot pro Monat erkennen | 4 | done | docs/spec.md BR7 | Implementiert: serverseitige Erkennung pro Slot-Monat in `PUT /api/personal-training/[id]`, Rueckgabe als `premiumPtSlotRecognition` und Member-Hinweis im Profil |
 | FZ-062 | PT-Buchung als freien Premium-Slot markieren | 4 | validated | docs/spec.md BR7 | `is_free_premium_slot = True` |
 | FZ-063 | Kostenpflichtige PT-Slots mit Trainer-Stundensatz buchen | 4 | validated | docs/spec.md BR7 | Betrag aus `Trainer.hourly_pt_rate` |
 | FZ-064 | PT-Billing-Status `PENDING` setzen | 4 | validated | docs/spec.md BR7 | Offener Posten fuer Monatsende |

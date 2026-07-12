@@ -2,6 +2,31 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-12 - FZ-061 Premium-Inklusivslot pro Monat serverseitig erkennen
+
+**Kontext:** Laut `docs/spec.md` BR7 hat ein Premium-Mitglied einen freien Personal-Training-Slot pro Monat. Nach FZ-058 bis FZ-060 war die PT-Direktbuchung bereits serverseitig abgesichert, aber der Buchungspfad erkannte noch nicht, ob ein neu gebuchter Slot in den monatlichen Inklusivrahmen des Mitglieds faellt.
+
+### Entscheidung
+
+FZ-061 wird als reine Erkennungslogik im bestehenden PT-Buchungspfad umgesetzt:
+- `src/lib/premium-pt-slot.ts` kapselt die Monatsfenster-Berechnung auf Basis des Slot-Startzeitpunkts und die Regel, ob noch ein inkludierter PT-Slot verfuegbar ist.
+- `PUT /api/personal-training/[id]` laedt bei Direktbuchung den Tarifparameter `includedPtSlotsPerMonth` des Mitglieds und zaehlt bereits als Inklusivslot markierte PT-Buchungen desselben Monats mit Status `BOOKED` oder `COMPLETED`.
+- Die API antwortet bei erfolgreicher Direktbuchung zusaetzlich mit `premiumPtSlotRecognition`, damit der Buchungspfad das Ergebnis sofort nutzen kann, ohne Billing oder Persistenz von FZ-062 bis FZ-064 vorzuziehen.
+- Das Member-Profil zeigt nach erfolgreicher Buchung einen Hinweis, wenn der Termin den freien Premium-Slot des Monats nutzt.
+- API-Tests decken den Fall mit freiem Monatskontingent und den Fall mit bereits verbrauchtem Inklusivslot ab.
+
+### Alternativen verworfen
+
+- Sofortiges Setzen von `isFreePremiumSlot` in demselben Schritt: gehoert fachlich zu FZ-062 und haette die bewusste Feature-Trennung im Backlog verwischt.
+- Monatspruefung nach Buchungszeitpunkt statt Slot-Zeitpunkt: wuerde spaet gebuchte Termine im Folgemonat fachlich falsch zuordnen.
+- Ausschliesslich clientseitige Erkennung im Profil: unzureichend, weil direkte API-Aufrufe die Regel sonst nicht verlaesslich abbilden.
+
+### Konsequenzen
+
+- BR7 ist fuer die Erkennung des monatlichen Premium-Freikontingents jetzt serverseitig vorbereitet.
+- FZ-062 kann die bestehende Erkennung direkt fuer das Persistieren von `isFreePremiumSlot` weiterverwenden.
+- Es waren keine Schemaaenderungen oder Migrationen notwendig.
+
 ## 2026-07-12 - FZ-060 Trainerabsage bis 24 Stunden vor PT-Start serverseitig erzwungen
 
 **Kontext:** Laut `docs/spec.md` BR7 kann ein Trainer einen gebuchten Personal-Training-Slot nur im Notfall und nur bis 24 Stunden vor Start absagen. Nach FZ-059 war der Status `CANCELLED_BY_TRAINER` bereits verfuegbar, aber die 24h-Grenze und die fachliche Einschraenkung auf tatsaechlich gebuchte Slots wurden in `PUT /api/personal-training/[id]` noch nicht verbindlich geprueft.

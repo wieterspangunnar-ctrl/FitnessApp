@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { notificationDispatcher } from "@/lib/notifications";
+import {
+  getIncludedPremiumPtSlotMonthWindow,
+  qualifiesForIncludedPremiumPtSlot
+} from "@/lib/premium-pt-slot";
 
 type RouteContext = { params: Promise<{ id: string }> };
 type PersonalTrainingStatus = "AVAILABLE" | "BOOKED" | "COMPLETED" | "CANCELLED_BY_TRAINER";
@@ -18,6 +22,12 @@ type UpdatePtSlotBody = {
   isFreePremiumSlot?: boolean;
   startTime?: string;
   endTime?: string;
+};
+
+type PremiumPtSlotRecognition = {
+  qualifiesForFreePremiumSlot: boolean;
+  includedPtSlotsPerMonth: number;
+  alreadyUsedIncludedSlotsThisMonth: number;
 };
 
 export async function GET(_request: Request, context: RouteContext) {
@@ -73,12 +83,21 @@ export async function PUT(request: Request, context: RouteContext) {
     }
   }
 
-  let member = null;
+  let member: {
+    id: string;
+    status: string;
+    membershipTier: { includedPtSlotsPerMonth: number };
+  } | null = null;
+  let premiumPtSlotRecognition: PremiumPtSlotRecognition | null = null;
 
   if (body.memberId) {
     member = await prisma.member.findUnique({
       where: { id: body.memberId },
-      select: { id: true, status: true }
+      select: {
+        id: true,
+        status: true,
+        membershipTier: { select: { includedPtSlotsPerMonth: true } }
+      }
     });
 
     if (!member) {
@@ -96,6 +115,28 @@ export async function PUT(request: Request, context: RouteContext) {
     if (slot.startTime <= new Date()) {
       return NextResponse.json({ error: "Vergangene oder laufende Slots können nicht gebucht werden" }, { status: 409 });
     }
+
+    const { startOfMonth, startOfNextMonth } = getIncludedPremiumPtSlotMonthWindow(slot.startTime);
+    const alreadyUsedIncludedSlotsThisMonth = await prisma.personalTrainingBooking.count({
+      where: {
+        memberId: body.memberId,
+        isFreePremiumSlot: true,
+        status: { in: ["BOOKED", "COMPLETED"] },
+        startTime: {
+          gte: startOfMonth,
+          lt: startOfNextMonth
+        }
+      }
+    });
+
+    premiumPtSlotRecognition = {
+      qualifiesForFreePremiumSlot: qualifiesForIncludedPremiumPtSlot({
+        includedPtSlotsPerMonth: member.membershipTier.includedPtSlotsPerMonth,
+        alreadyUsedIncludedSlotsThisMonth
+      }),
+      includedPtSlotsPerMonth: member.membershipTier.includedPtSlotsPerMonth,
+      alreadyUsedIncludedSlotsThisMonth
+    };
   }
 
   const updateData: Record<string, unknown> = {};
@@ -184,7 +225,11 @@ export async function PUT(request: Request, context: RouteContext) {
       });
     }
 
-    return NextResponse.json(bookedSlot);
+    return NextResponse.json(
+      premiumPtSlotRecognition
+        ? { ...bookedSlot, premiumPtSlotRecognition }
+        : bookedSlot
+    );
   }
 
   const updated = await prisma.personalTrainingBooking.update({
