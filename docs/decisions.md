@@ -2,6 +2,34 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-12 - FZ-055 PersonalTrainingBooking-Entitaet modelliert und API + Admin-UI eingefuehrt
+
+**Kontext:** Laut `docs/spec.md` §2.1, §3 und BR7 werden Personal-Training-Slots benoetigt, bei denen Trainer freie Zeiten als `AVAILABLE` eintragen und Mitglieder diese buchen koennen. Die Entitaet `PersonalTrainingBooking` war bereits im Prisma-Schema und in der Datenbank vorhanden (als Teil frueherer Modellierungsarbeit). Die zugehoerigen API-Routen und die Admin-UI fehlten noch.
+
+### Entscheidung
+
+FZ-055 wird als vollstaendige Modellierungsebene implementiert:
+- **Prisma-Modell:** Bereits vorhanden in `prisma/schema.prisma` mit allen Spec-Feldern (`trainerId`, `memberId` nullable, `startTime`, `endTime`, `status`, `isFreePremiumSlot`, `billingStatus`). Keine Schemaaenderung noetig.
+- **API `GET /api/personal-training`:** Liefert alle Slots mit Trainer- und Member-Daten, sortiert nach `startTime`.
+- **API `POST /api/personal-training`:** Legt einen neuen Slot mit Status `AVAILABLE` an. Serverseitige Validierungen: Pflichtfelder, Zeitkonsistenz (end > start), Trainer-Existenz, Ueberschneidungspruefung fuer denselben Trainer (ausgenommen `CANCELLED_BY_TRAINER`-Slots).
+- **API `GET /api/personal-training/[id]`:** Einzelabfrage eines Slots.
+- **API `PUT /api/personal-training/[id]`:** Erlaubt Status- und Abrechnungsstatus-Updates sowie Member-Zuweisung. Bei Member-Zuweisung ohne expliziten Status wird Status automatisch auf `BOOKED` gesetzt. Nur `AVAILABLE`-Slots koennen neu zugewiesen werden.
+- **API `DELETE /api/personal-training/[id]`:** Loeschen nur fuer Slots mit Status `AVAILABLE` erlaubt, um versehentliches Loeschen gebuchter oder abgeschlossener Termine zu verhindern.
+- **Admin-UI `src/app/personal-training/page.tsx`:** Formular zum Anlegen neuer Slots (Trainer, Start-/Endzeit), Tabelle mit Status- und Abrechnungs-Dropdowns, Loesch-Aktion fuer freie Slots.
+
+### Alternativen verworfen
+
+- Member-seitiger Buchungsfluss direkt in FZ-055: zu breit fuer diese Modellierungsstufe; FZ-056 ff. decken die Slot-Buchung durch Mitglieder ab.
+- Billing-Logik (PT-Gebueehr auf Kundenkonto) in FZ-055: gehoert zu BR7, wird in einem eigenen Feature abgebildet; `CustomerAccountEntry` hat bereits die Relation und ist vorbereitet.
+- Separate API-Routen fuer Trainer-seitige vs. Admin-seitige Operationen: unnoetige Komplexitaet auf dieser Projektstufe.
+
+### Konsequenzen
+
+- BR7-Grundlage ist gelegt: Trainer koennen Slots anlegen und verwalten, Lisa hat vollstaendige Admin-Sicht und Kontrolle ueber Status und Abrechnung.
+- Die Ueberschneidungspruefung verhindert doppelte Slotbelegung fuer denselben Trainer.
+- Keine Schemaaenderungen oder Migrationen noetig; die bestehende Tabellenstruktur war bereits korrekt.
+- FZ-056 (Slot-Buchung durch Mitglieder) und spaetrere Abrechnungs-Features koennen direkt auf dieser API aufbauen.
+
 ## 2026-07-11 - FZ-054 Vertragsende-Warnliste im Admin-Dashboard als Wiederverwendung der Reminder-Logik umgesetzt
 
 **Kontext:** Laut `docs/spec.md` BR8 soll Lisa auslaufende Vertraege im Admin-Dashboard als Warnliste sehen. Nach FZ-051 bis FZ-053 existierte bereits die serverseitige Kandidatenlogik fuer Vertragsenden in 14 und 3 Tagen, aber es gab noch keine sichtbare Admin-Uebersicht dafuer.
