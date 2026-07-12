@@ -2,6 +2,27 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-12 - FZ-056 Trainer/PT-Slots als AVAILABLE anlegen verifiziert und abgesichert
+
+**Kontext:** Laut `docs/spec.md` BR7 muessen Trainer freie Personal-Training-Zeiten erfassen koennen, die als `AVAILABLE` bereitstehen. Die API-Grundlage aus FZ-055 legte Slots bereits als `AVAILABLE` an, aber fuer FZ-056 fehlte eine explizite, automatisierte Absicherung der Kernregel.
+
+### Entscheidung
+
+FZ-056 wird als gezielte Verifikation und Haertung der bestehenden Slot-Anlage umgesetzt:
+- Neuer API-Test `src/app/api/personal-training/route.test.ts` validiert, dass `POST /api/personal-training` neue Slots mit `status = AVAILABLE` und leerer Member-Zuordnung (`memberId = null`) anlegt.
+- Ein zweiter Test deckt die Ueberschneidungsregel fuer denselben Trainer ab und erwartet korrekt HTTP 409.
+- Die bestehende API-Validierung (Pflichtfelder, gueltige Zeiten, `end > start`, Trainer-Existenz) bleibt unveraendert und ist Teil der FZ-056-Akzeptanz.
+
+### Alternativen verworfen
+
+- Neuer separater Endpunkt nur fuer FZ-056: unnoetig, da `POST /api/personal-training` die fachliche Regel bereits passend kapselt.
+- Umsetzung ohne Tests: zu hohes Regressionsrisiko fuer den spaeteren Member-Buchungsfluss (FZ-057/FZ-058).
+
+### Konsequenzen
+
+- FZ-056 ist jetzt nicht nur funktional vorhanden, sondern testbar abgesichert.
+- Die Umsetzung bleibt klein und kompatibel mit den Folgefeatures in Phase 4.
+
 ## 2026-07-12 - FZ-055 PersonalTrainingBooking-Entitaet modelliert und API + Admin-UI eingefuehrt
 
 **Kontext:** Laut `docs/spec.md` §2.1, §3 und BR7 werden Personal-Training-Slots benoetigt, bei denen Trainer freie Zeiten als `AVAILABLE` eintragen und Mitglieder diese buchen koennen. Die Entitaet `PersonalTrainingBooking` war bereits im Prisma-Schema und in der Datenbank vorhanden (als Teil frueherer Modellierungsarbeit). Die zugehoerigen API-Routen und die Admin-UI fehlten noch.
