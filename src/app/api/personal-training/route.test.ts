@@ -164,10 +164,11 @@ test("books an available PT slot directly for an active member", async () => {
     personalTrainingBookingFindUnique: prisma.personalTrainingBooking.findUnique,
     memberFindUnique: prisma.member.findUnique,
     personalTrainingBookingCount: prisma.personalTrainingBooking.count,
-    personalTrainingBookingUpdateMany: prisma.personalTrainingBooking.updateMany
+    transaction: prisma.$transaction
   };
 
   let updateManyArgs: Record<string, unknown> | null = null;
+  let accountEntryUpsertCalled = false;
   let countArgs: Record<string, unknown> | null = null;
   let findUniqueCalls = 0;
 
@@ -183,7 +184,10 @@ test("books an available PT slot directly for an active member", async () => {
         endTime: new Date("2026-08-01T10:00:00.000Z"),
         status: "AVAILABLE",
         billingStatus: "PENDING",
-        isFreePremiumSlot: false
+        isFreePremiumSlot: false,
+        trainer: {
+          hourlyPtRate: 70
+        }
       };
     }
 
@@ -210,9 +214,21 @@ test("books an available PT slot directly for an active member", async () => {
     return 0;
   }) as any;
 
-  prisma.personalTrainingBooking.updateMany = (async (args: Record<string, unknown>) => {
-    updateManyArgs = args;
-    return { count: 1 };
+  prisma.$transaction = (async (callback: (tx: any) => Promise<any>) => {
+    return callback({
+      personalTrainingBooking: {
+        updateMany: async (args: Record<string, unknown>) => {
+          updateManyArgs = args;
+          return { count: 1 };
+        }
+      },
+      customerAccountEntry: {
+        upsert: async () => {
+          accountEntryUpsertCalled = true;
+          return { id: "account-entry-should-not-exist" };
+        }
+      }
+    });
   }) as any;
 
   try {
@@ -258,11 +274,12 @@ test("books an available PT slot directly for an active member", async () => {
         isFreePremiumSlot: true
       }
     });
+    assert.equal(accountEntryUpsertCalled, false);
   } finally {
     prisma.personalTrainingBooking.findUnique = original.personalTrainingBookingFindUnique;
     prisma.member.findUnique = original.memberFindUnique;
     prisma.personalTrainingBooking.count = original.personalTrainingBookingCount;
-    prisma.personalTrainingBooking.updateMany = original.personalTrainingBookingUpdateMany;
+    prisma.$transaction = original.transaction;
   }
 });
 
@@ -271,10 +288,11 @@ test("recognizes when the monthly included premium PT slot is already used", asy
     personalTrainingBookingFindUnique: prisma.personalTrainingBooking.findUnique,
     memberFindUnique: prisma.member.findUnique,
     personalTrainingBookingCount: prisma.personalTrainingBooking.count,
-    personalTrainingBookingUpdateMany: prisma.personalTrainingBooking.updateMany
+    transaction: prisma.$transaction
   };
 
   let updateManyArgs: Record<string, unknown> | null = null;
+  let accountEntryUpsertArgs: Record<string, unknown> | null = null;
   let findUniqueCalls = 0;
 
   prisma.personalTrainingBooking.findUnique = (async () => {
@@ -289,7 +307,10 @@ test("recognizes when the monthly included premium PT slot is already used", asy
         endTime: new Date("2026-08-20T10:00:00.000Z"),
         status: "AVAILABLE",
         billingStatus: "PENDING",
-        isFreePremiumSlot: false
+        isFreePremiumSlot: false,
+        trainer: {
+          hourlyPtRate: 79.5
+        }
       };
     }
 
@@ -312,9 +333,26 @@ test("recognizes when the monthly included premium PT slot is already used", asy
   })) as any;
 
   prisma.personalTrainingBooking.count = (async () => 1) as any;
-  prisma.personalTrainingBooking.updateMany = (async (args: Record<string, unknown>) => {
-    updateManyArgs = args;
-    return { count: 1 };
+  prisma.$transaction = (async (callback: (tx: any) => Promise<any>) => {
+    return callback({
+      personalTrainingBooking: {
+        updateMany: async (args: Record<string, unknown>) => {
+          updateManyArgs = args;
+          return { count: 1 };
+        }
+      },
+      customerAccountEntry: {
+        upsert: async (args: Record<string, unknown>) => {
+          accountEntryUpsertArgs = args;
+          return {
+            id: "account-entry-pt-1",
+            type: "PERSONAL_TRAINING_CHARGE",
+            amountCents: 7950,
+            billingStatus: "PENDING"
+          };
+        }
+      }
+    });
   }) as any;
 
   try {
@@ -347,11 +385,35 @@ test("recognizes when the monthly included premium PT slot is already used", asy
         isFreePremiumSlot: false
       }
     });
+    assert.deepEqual(accountEntryUpsertArgs, {
+      where: {
+        personalTrainingBookingId_type: {
+          personalTrainingBookingId: "pt-slot-august-2",
+          type: "PERSONAL_TRAINING_CHARGE"
+        }
+      },
+      create: {
+        memberId: "member-1",
+        personalTrainingBookingId: "pt-slot-august-2",
+        type: "PERSONAL_TRAINING_CHARGE",
+        amountCents: 7950,
+        billingStatus: "PENDING",
+        description: "Kostenpflichtiger Personal-Training-Slot"
+      },
+      update: {
+        memberId: "member-1",
+        amountCents: 7950,
+        billingStatus: "PENDING",
+        billedAt: null,
+        paidAt: null,
+        description: "Kostenpflichtiger Personal-Training-Slot"
+      }
+    });
   } finally {
     prisma.personalTrainingBooking.findUnique = original.personalTrainingBookingFindUnique;
     prisma.member.findUnique = original.memberFindUnique;
     prisma.personalTrainingBooking.count = original.personalTrainingBookingCount;
-    prisma.personalTrainingBooking.updateMany = original.personalTrainingBookingUpdateMany;
+    prisma.$transaction = original.transaction;
   }
 });
 

@@ -30,6 +30,16 @@ type PremiumPtSlotRecognition = {
   alreadyUsedIncludedSlotsThisMonth: number;
 };
 
+function toAmountCentsFromHourlyRate(hourlyPtRate: unknown) {
+  const numericRate = Number(hourlyPtRate);
+
+  if (!Number.isFinite(numericRate) || numericRate < 0) {
+    return null;
+  }
+
+  return Math.round(numericRate * 100);
+}
+
 export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
 
@@ -52,7 +62,16 @@ export async function PUT(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const body = (await request.json()) as UpdatePtSlotBody;
 
-  const slot = await prisma.personalTrainingBooking.findUnique({ where: { id } });
+  const slot = await prisma.personalTrainingBooking.findUnique({
+    where: { id },
+    include: {
+      trainer: {
+        select: {
+          hourlyPtRate: true
+        }
+      }
+    }
+  });
   if (!slot) {
     return NextResponse.json({ error: "Slot nicht gefunden" }, { status: 404 });
   }
@@ -178,21 +197,70 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 
   if (body.memberId) {
-    const updatedCount = await prisma.personalTrainingBooking.updateMany({
-      where: {
-        id,
-        status: "AVAILABLE",
-        memberId: null
-      },
-      data: {
-        ...updateData,
-        memberId: body.memberId,
-        status: (body.status as PersonalTrainingStatus | undefined) ?? "BOOKED",
-        isFreePremiumSlot: premiumPtSlotRecognition?.qualifiesForFreePremiumSlot ?? false
+    const bookingMemberId = body.memberId;
+    const shouldCreatePaidPtCharge =
+      premiumPtSlotRecognition?.qualifiesForFreePremiumSlot === false;
+    const paidPtChargeAmountCents = shouldCreatePaidPtCharge
+      ? toAmountCentsFromHourlyRate(slot.trainer.hourlyPtRate)
+      : null;
+
+    if (shouldCreatePaidPtCharge && paidPtChargeAmountCents === null) {
+      return NextResponse.json(
+        { error: "Trainer-Stundensatz ist ungueltig" },
+        { status: 500 }
+      );
+    }
+
+    const updatedCount = await prisma.$transaction(async (tx) => {
+      const updateResult = await tx.personalTrainingBooking.updateMany({
+        where: {
+          id,
+          status: "AVAILABLE",
+          memberId: null
+        },
+        data: {
+          ...updateData,
+          memberId: body.memberId,
+          status: (body.status as PersonalTrainingStatus | undefined) ?? "BOOKED",
+          isFreePremiumSlot: premiumPtSlotRecognition?.qualifiesForFreePremiumSlot ?? false
+        }
+      });
+
+      if (updateResult.count === 0) {
+        return 0;
       }
+
+      if (shouldCreatePaidPtCharge && paidPtChargeAmountCents !== null) {
+        await tx.customerAccountEntry.upsert({
+          where: {
+            personalTrainingBookingId_type: {
+              personalTrainingBookingId: id,
+              type: "PERSONAL_TRAINING_CHARGE"
+            }
+          },
+          create: {
+            memberId: bookingMemberId,
+            personalTrainingBookingId: id,
+            type: "PERSONAL_TRAINING_CHARGE",
+            amountCents: paidPtChargeAmountCents,
+            billingStatus: "PENDING",
+            description: "Kostenpflichtiger Personal-Training-Slot"
+          },
+          update: {
+            memberId: bookingMemberId,
+            amountCents: paidPtChargeAmountCents,
+            billingStatus: "PENDING",
+            billedAt: null,
+            paidAt: null,
+            description: "Kostenpflichtiger Personal-Training-Slot"
+          }
+        });
+      }
+
+      return updateResult.count;
     });
 
-    if (updatedCount.count === 0) {
+    if (updatedCount === 0) {
       return NextResponse.json({ error: "Slot ist nicht mehr verfügbar" }, { status: 409 });
     }
 

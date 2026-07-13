@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-13 - FZ-063 Kostenpflichtige PT-Slots mit Trainer-Stundensatz auf Kundenkonto buchen
+
+**Kontext:** Laut `docs/spec.md` BR7 sollen alle PT-Slots, die nicht als monatlicher Premium-Inklusivslot gelten, den Betrag des Trainer-Stundensatzes auf das Kundenkonto buchen. Nach FZ-062 wurde bereits serverseitig gespeichert, ob ein Slot frei ist (`isFreePremiumSlot`), aber der zugehoerige kostenpflichtige Kontoposten fehlte noch.
+
+### Entscheidung
+
+FZ-063 wird im bestehenden PT-Direktbuchungspfad umgesetzt:
+- In `PUT /api/personal-training/[id]` wird bei erfolgreicher Buchung eines **nicht freien** Slots innerhalb derselben Transaktion ein `CustomerAccountEntry` vom Typ `PERSONAL_TRAINING_CHARGE` per Upsert geschrieben.
+- Die Betraege werden aus `Trainer.hourly_pt_rate` abgeleitet und als Integer-Cents gespeichert (`Math.round(rate * 100)`), damit die Geldlogik ohne Float-Persistenz erfolgt.
+- Der Kontoposten wird idempotent ueber `personalTrainingBookingId_type` gepflegt und bei erneutem Lauf auf `billingStatus = PENDING` mit geleerten `billedAt`/`paidAt` zurueckgesetzt.
+- API-Tests in `src/app/api/personal-training/route.test.ts` pruefen, dass bei freiem Premium-Slot **kein** Kontoposten entsteht und bei kostenpflichtigem Slot der korrekte Betrag aus dem Trainer-Stundensatz gebucht wird.
+
+### Alternativen verworfen
+
+- Kontoposten erst in FZ-064/FZ-065 erzeugen: haette die fachliche Kopplung zur eigentlichen Buchung geschwaecht.
+- Betrag clientseitig berechnen und uebergeben: fachlich unsicher und manipulierbar.
+- Kontoposten ohne Upsert erzeugen: Risiko mehrfacher Posten fuer denselben PT-Slot.
+
+### Konsequenzen
+
+- BR7 ist fuer die kostenpflichtige PT-Buchung mit Preisableitung aus dem Trainerprofil umgesetzt.
+- Das Ledger (`CustomerAccountEntry`) enthaelt die abrechnungsrelevanten PT-Posten bereits zum Buchungszeitpunkt.
+- Es waren keine Schemaaenderungen oder Migrationen notwendig.
+
 ## 2026-07-13 - FZ-062 PT-Buchung als freien Premium-Slot markieren
 
 **Kontext:** Laut `docs/spec.md` BR7 muss bei einer PT-Direktbuchung erkennbar sein, ob der gebuchte Slot den monatlichen Premium-Inklusivslot verbraucht. Nach FZ-061 lag die serverseitige Erkennungslogik bereits vor, der Buchungsdatensatz wurde aber noch nicht automatisch mit `isFreePremiumSlot` persistiert.
