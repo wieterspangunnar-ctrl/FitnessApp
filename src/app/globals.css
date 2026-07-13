@@ -190,6 +190,69 @@ h1 {
   font-weight: 700;
 }
 
+.billing-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.billing-summary p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.billing-summary strong {
+  font-size: 1.15rem;
+}
+
+.billing-list {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+}
+
+.billing-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+
+.billing-item strong {
+  display: block;
+}
+
+.billing-item p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.billing-amount-block {
+  min-width: 180px;
+  text-align: right;
+}
+
+.billing-amount-block strong {
+  font-size: 1.08rem;
+}
+
+.billing-amount-block time {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 .module-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -219,12 +282,23 @@ h1 {
 
 @media (max-width: 720px) {
   .panel-heading,
-  .warning-item {
+  .warning-item,
+  .billing-item {
     flex-direction: column;
     align-items: flex-start;
   }
 
   .warning-item time {
     white-space: normal;
+  }
+
+  .billing-summary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .billing-amount-block {
+    min-width: 0;
+    text-align: left;
   }
 }

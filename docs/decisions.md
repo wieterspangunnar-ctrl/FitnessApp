@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-13 - FZ-065 Admin-Dashboard fuer offene PT-Posten ueber Ledgerdaten
+
+**Kontext:** Laut `docs/spec.md` BR7 soll Lisa am Monatsende alle offenen PT-Posten im Dashboard sehen, um den SEPA-Einzug vorzubereiten. Nach FZ-064 waren PT-Slots und Kontoposten fachlich auf `billingStatus` ausgerichtet, es fehlte aber die zentrale Dashboard-Sicht auf offene PT-Forderungen.
+
+### Entscheidung
+
+FZ-065 wird als Dashboard-Auswertung auf Basis des bestehenden Ledgers umgesetzt:
+- Neue Aggregationsfunktion `getOpenPersonalTrainingChargesDashboardData()` in `src/lib/personal-training-open-items.ts` liest `CustomerAccountEntry` mit `type = PERSONAL_TRAINING_CHARGE` und `billingStatus = PENDING`.
+- Die Startseite `src/app/page.tsx` zeigt einen eigenen Admin-Block "Offene PT-Posten" mit Anzahl, Gesamtsumme und Detailliste (Mitglied, Slot, Trainer, Betrag, Erstellzeit).
+- Der Block verlinkt direkt zur PT-Verwaltung unter `/personal-training`, damit Lisa von der Uebersicht in die Detailpflege wechseln kann.
+- Ein Unit-Test in `src/lib/personal-training-open-items.test.ts` sichert Filter, Sortierung und Summenbildung der Aggregationsfunktion.
+
+### Alternativen verworfen
+
+- Direkter Bezug nur auf `PersonalTrainingBooking`: unzureichend, weil abrechnungsrelevante Geldposten fachlich im Ledger (`CustomerAccountEntry`) gefuehrt werden.
+- Eigener API-Endpunkt nur fuer das Dashboard: aktuell unnoetig, da die serverseitige Startseite die Daten direkt effizient laden kann.
+- Postenliste aus Slot-`billingStatus` allein ableiten: waere weniger robust bei kuenftigen Mischfaellen, in denen nicht jeder Slot exakt einen offenen Geldposten repraesentiert.
+
+### Konsequenzen
+
+- BR7 ist fuer die offene-Posten-Uebersicht im Admin-Dashboard umgesetzt.
+- FZ-066 (Monatsabschlussliste) kann auf derselben Ledger-Auswertung aufbauen.
+- Keine Schemaaenderungen oder Migrationen notwendig.
+
 ## 2026-07-13 - FZ-064 PT-Billing-Status bei Direktbuchung fachlich ableiten
 
 **Kontext:** Nach FZ-063 wurde bei kostenpflichtigen PT-Buchungen bereits ein `CustomerAccountEntry` mit `billingStatus = PENDING` angelegt. Der zugehoerige `PersonalTrainingBooking`-Datensatz selbst erhielt im Direktbuchungspfad jedoch noch keinen fachlich abgeleiteten Billing-Status und blieb dadurch fuer freie Premium-Slots uneindeutig.
