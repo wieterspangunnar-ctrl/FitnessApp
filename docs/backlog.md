@@ -1,6 +1,6 @@
 # backlog.md - FitZone
 
-_Stand: 2026-07-11_
+_Stand: 2026-07-13_
 
 _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 
@@ -108,7 +108,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-064 | PT-Billing-Status `PENDING` setzen | 4 | done | docs/spec.md BR7 | Implementiert: PT-Direktbuchung setzt `billingStatus` fachlich abgeleitet auf `PENDING` fuer kostenpflichtige Slots bzw. `PAID` fuer freie Premium-Slots; API-Tests in `src/app/api/personal-training/route.test.ts` erweitert |
 | FZ-065 | Admin-Dashboard fuer offene PT-Posten | 4 | done | docs/spec.md §1, BR7 | Implementiert: Startseite zeigt offenen PT-Posten-Block mit Anzahl, Gesamtsumme und Detailliste aller `PENDING`-PT-Posten inkl. Mitglied, Slot und Trainer; Link zur PT-Verwaltung vorhanden |
 | FZ-066 | Monatsabschluss-Liste fuer SEPA-Einzug | 4 | done | docs/spec.md BR7 | Implementiert: eigene PT-Ansicht mit `GET /api/personal-training/month-closing` und sichtbarer Liste der offenen PENDING-Posten fuer den SEPA-Monatsabschluss |
-| FZ-067 | PT-Posten nach Export auf `BILLED_TO_ACCOUNT` setzen | 4 | validated | docs/spec.md BR7 | Nach SEPA-Vorbereitung |
+| FZ-067 | PT-Posten nach Export auf `BILLED_TO_ACCOUNT` setzen | 4 | done | docs/spec.md BR7 | Implementiert: `POST /api/personal-training/month-closing` markiert offene PT-Account-Posten inkl. verknuepfter PT-Slots atomar als `BILLED_TO_ACCOUNT`; Admin-UI-Aktion in `src/app/personal-training/page.tsx` |
 
 ### Phase 5 - Online-Videos & Zugriff
 

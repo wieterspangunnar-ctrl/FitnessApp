@@ -91,6 +91,7 @@ export default function PersonalTrainingPage() {
   const [form, setForm] = useState<SlotForm>(emptyForm);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMonthClosingExporting, setIsMonthClosingExporting] = useState(false);
   const [monthClosingData, setMonthClosingData] = useState<MonthClosingData>({
     items: [],
     totalOpenItems: 0,
@@ -178,6 +179,30 @@ export default function PersonalTrainingPage() {
     }
     setMessage("Slot gelöscht");
     await loadData();
+  };
+
+  const handleMonthClosingExport = async () => {
+    setMessage(null);
+    setIsMonthClosingExporting(true);
+
+    try {
+      const response = await fetch("/api/personal-training/month-closing", {
+        method: "POST"
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error ?? "Monatsabschluss konnte nicht verarbeitet werden");
+        return;
+      }
+
+      setMessage(
+        `${data.updatedAccountEntries ?? 0} PT-Posten auf BILLED_TO_ACCOUNT gesetzt`
+      );
+      await loadData();
+    } finally {
+      setIsMonthClosingExporting(false);
+    }
   };
 
   if (loading) return <p style={{ padding: 24 }}>Lade Daten …</p>;
@@ -375,6 +400,25 @@ export default function PersonalTrainingPage() {
           </div>
         </div>
 
+        <div style={{ marginBottom: 16, display: "flex", justifyContent: "flex-end" }}>
+          <button
+            onClick={() => void handleMonthClosingExport()}
+            disabled={monthClosingData.totalOpenItems === 0 || isMonthClosingExporting}
+            style={{
+              padding: "8px 14px",
+              background: monthClosingData.totalOpenItems === 0 || isMonthClosingExporting ? "#9ca3af" : "#c2410c",
+              color: "#fff",
+              border: "none",
+              borderRadius: 4,
+              fontWeight: 600,
+              cursor: monthClosingData.totalOpenItems === 0 || isMonthClosingExporting ? "not-allowed" : "pointer",
+              fontSize: 13
+            }}
+          >
+            {isMonthClosingExporting ? "Verarbeite Export..." : "SEPA-Export abgeschlossen -> BILLED_TO_ACCOUNT setzen"}
+          </button>
+        </div>
+
         {monthClosingData.totalOpenItems === 0 ? (
           <p style={{ margin: 0, color: "#9a3412" }}>Keine offenen PT-Posten für den Monatsabschluss vorhanden.</p>
         ) : (
@@ -406,7 +450,7 @@ export default function PersonalTrainingPage() {
         )}
 
         <p style={{ margin: "16px 0 0", color: "#9a3412", fontSize: 13 }}>
-          Diese Liste ist die Grundlage fuer den spaeteren Statuswechsel auf BILLED_TO_ACCOUNT nach dem SEPA-Export.
+          Diese Liste ist die Grundlage fuer den Statuswechsel auf BILLED_TO_ACCOUNT nach dem SEPA-Export.
         </p>
       </section>
     </main>

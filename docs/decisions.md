@@ -2,6 +2,31 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-13 - FZ-067 PT-Posten nach SEPA-Export atomar auf BILLED_TO_ACCOUNT setzen
+
+**Kontext:** Laut `docs/spec.md` BR7 soll Lisa nach dem Export fuer den SEPA-Einzug alle offenen PT-Posten fachlich von `PENDING` auf `BILLED_TO_ACCOUNT` umstellen. Nach FZ-066 war die Monatsabschlussliste sichtbar, aber der eigentliche Exportabschluss fehlte noch.
+
+### Entscheidung
+
+FZ-067 wird als explizite Abschlussaktion im PT-Monatsabschluss umgesetzt:
+- Neuer Endpunkt `POST /api/personal-training/month-closing` verarbeitet die aktuell offenen PT-Posten auf Basis der bestehenden Ledger-Auswertung.
+- Die Umstellung laeuft transaktional: `CustomerAccountEntry` vom Typ `PERSONAL_TRAINING_CHARGE` wird von `PENDING` auf `BILLED_TO_ACCOUNT` gesetzt und mit `billedAt` gestempelt.
+- Verknuepfte `PersonalTrainingBooking`-Datensaetze werden im selben Transaktionsschritt ebenfalls auf `billingStatus = BILLED_TO_ACCOUNT` angehoben, damit Slot- und Ledger-Sicht konsistent bleiben.
+- Die Admin-PT-Seite `src/app/personal-training/page.tsx` bietet eine explizite Aktion "SEPA-Export abgeschlossen -> BILLED_TO_ACCOUNT setzen" und laedt danach die Monatsabschlussdaten neu.
+- API-Tests in `src/app/api/personal-training/month-closing/route.test.ts` sichern Erfolgsfall und Leerfall ohne offene Posten ab.
+
+### Alternativen verworfen
+
+- Einzelupdates ohne Transaktion: zu hohes Risiko inkonsistenter Billing-Staende zwischen Ledger und PT-Slots.
+- Reiner Slot-Statuswechsel ohne Ledger-Anpassung: widerspricht der Ledger-zentrierten Abrechnungslogik aus BR7/FZ-063.
+- Automatischer Statuswechsel beim reinen Laden der Monatsabschlussliste: fachlich intransparent und nicht als bewusster Exportabschluss steuerbar.
+
+### Konsequenzen
+
+- BR7 ist fuer den Schritt nach dem SEPA-Export umgesetzt.
+- Der Monatsabschluss bleibt reproduzierbar und idempotent fuer bereits nicht mehr `PENDING`-Posten.
+- Es sind keine Schemaaenderungen oder Migrationen notwendig.
+
 ## 2026-07-13 - FZ-065 Admin-Dashboard fuer offene PT-Posten ueber Ledgerdaten
 
 **Kontext:** Laut `docs/spec.md` BR7 soll Lisa am Monatsende alle offenen PT-Posten im Dashboard sehen, um den SEPA-Einzug vorzubereiten. Nach FZ-064 waren PT-Slots und Kontoposten fachlich auf `billingStatus` ausgerichtet, es fehlte aber die zentrale Dashboard-Sicht auf offene PT-Forderungen.
