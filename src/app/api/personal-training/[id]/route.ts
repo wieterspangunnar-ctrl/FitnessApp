@@ -187,7 +187,8 @@ export async function PUT(request: Request, context: RouteContext) {
       data: {
         ...updateData,
         memberId: body.memberId,
-        status: (body.status as PersonalTrainingStatus | undefined) ?? "BOOKED"
+        status: (body.status as PersonalTrainingStatus | undefined) ?? "BOOKED",
+        isFreePremiumSlot: premiumPtSlotRecognition?.qualifiesForFreePremiumSlot ?? false
       }
     });
 

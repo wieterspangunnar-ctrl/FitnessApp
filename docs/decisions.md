@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-13 - FZ-062 PT-Buchung als freien Premium-Slot markieren
+
+**Kontext:** Laut `docs/spec.md` BR7 muss bei einer PT-Direktbuchung erkennbar sein, ob der gebuchte Slot den monatlichen Premium-Inklusivslot verbraucht. Nach FZ-061 lag die serverseitige Erkennungslogik bereits vor, der Buchungsdatensatz wurde aber noch nicht automatisch mit `isFreePremiumSlot` persistiert.
+
+### Entscheidung
+
+FZ-062 wird als direkte Erweiterung des bestehenden PT-Buchungspfads umgesetzt:
+- In `PUT /api/personal-training/[id]` wird bei erfolgreicher Mitgliedszuweisung der Buchungssatz mit `isFreePremiumSlot` gespeichert.
+- Der Wert stammt aus der bereits vorhandenen Erkennungslogik von FZ-061 (`premiumPtSlotRecognition.qualifiesForFreePremiumSlot`) und bleibt damit serverseitig konsistent.
+- Die Persistenz erfolgt im selben atomaren Update-Schritt wie Member-Zuordnung und Statuswechsel, damit kein separater Folge-Schritt nötig ist.
+- API-Tests in `src/app/api/personal-training/route.test.ts` decken sowohl den Fall mit freiem Premium-Slot als auch den Fall ohne freien Premium-Slot ab und prüfen dabei die persistierten Update-Daten.
+
+### Alternativen verworfen
+
+- Nur die API-Antwort markieren statt den Datensatz zu persistieren: waere fuer Billing und spaetere Auswertungen zu fragil.
+- Premium-Freiplatz erst in FZ-063/FZ-064 mit Billing verbinden: wuerde die fachliche Zuordnung des Slots unnoetig verzögern.
+- Clientseitiges Setzen des Flags: fachlich unzuverlaessig, weil direkte API-Aufrufe die Regel umgehen koennten.
+
+### Konsequenzen
+
+- BR7 ist fuer die Kennzeichnung des freien Premium-Slots jetzt auch auf Persistenzebene umgesetzt.
+- Folgefeatures zu kostenpflichtigen PT-Slots und Billing koennen den bereits markierten Datensatz direkt verwenden.
+- Es waren keine Schemaaenderungen oder Migrationen notwendig.
+
 ## 2026-07-12 - FZ-061 Premium-Inklusivslot pro Monat serverseitig erkennen
 
 **Kontext:** Laut `docs/spec.md` BR7 hat ein Premium-Mitglied einen freien Personal-Training-Slot pro Monat. Nach FZ-058 bis FZ-060 war die PT-Direktbuchung bereits serverseitig abgesichert, aber der Buchungspfad erkannte noch nicht, ob ein neu gebuchter Slot in den monatlichen Inklusivrahmen des Mitglieds faellt.

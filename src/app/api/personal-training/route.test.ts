@@ -254,7 +254,8 @@ test("books an available PT slot directly for an active member", async () => {
       },
       data: {
         memberId: "member-1",
-        status: "BOOKED"
+        status: "BOOKED",
+        isFreePremiumSlot: true
       }
     });
   } finally {
@@ -273,6 +274,7 @@ test("recognizes when the monthly included premium PT slot is already used", asy
     personalTrainingBookingUpdateMany: prisma.personalTrainingBooking.updateMany
   };
 
+  let updateManyArgs: Record<string, unknown> | null = null;
   let findUniqueCalls = 0;
 
   prisma.personalTrainingBooking.findUnique = (async () => {
@@ -310,7 +312,10 @@ test("recognizes when the monthly included premium PT slot is already used", asy
   })) as any;
 
   prisma.personalTrainingBooking.count = (async () => 1) as any;
-  prisma.personalTrainingBooking.updateMany = (async () => ({ count: 1 })) as any;
+  prisma.personalTrainingBooking.updateMany = (async (args: Record<string, unknown>) => {
+    updateManyArgs = args;
+    return { count: 1 };
+  }) as any;
 
   try {
     const response = await PUT(
@@ -329,6 +334,18 @@ test("recognizes when the monthly included premium PT slot is already used", asy
       qualifiesForFreePremiumSlot: false,
       includedPtSlotsPerMonth: 1,
       alreadyUsedIncludedSlotsThisMonth: 1
+    });
+    assert.deepEqual(updateManyArgs, {
+      where: {
+        id: "pt-slot-august-2",
+        status: "AVAILABLE",
+        memberId: null
+      },
+      data: {
+        memberId: "member-1",
+        status: "BOOKED",
+        isFreePremiumSlot: false
+      }
     });
   } finally {
     prisma.personalTrainingBooking.findUnique = original.personalTrainingBookingFindUnique;
