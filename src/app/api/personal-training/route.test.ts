@@ -271,7 +271,8 @@ test("books an available PT slot directly for an active member", async () => {
       data: {
         memberId: "member-1",
         status: "BOOKED",
-        isFreePremiumSlot: true
+        isFreePremiumSlot: true,
+        billingStatus: "PAID"
       }
     });
     assert.equal(accountEntryUpsertCalled, false);
@@ -382,7 +383,8 @@ test("recognizes when the monthly included premium PT slot is already used", asy
       data: {
         memberId: "member-1",
         status: "BOOKED",
-        isFreePremiumSlot: false
+        isFreePremiumSlot: false,
+        billingStatus: "PENDING"
       }
     });
     assert.deepEqual(accountEntryUpsertArgs, {

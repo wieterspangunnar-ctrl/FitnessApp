@@ -105,7 +105,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-061 | Premium-Inklusivslot pro Monat erkennen | 4 | done | docs/spec.md BR7 | Implementiert: serverseitige Erkennung pro Slot-Monat in `PUT /api/personal-training/[id]`, Rueckgabe als `premiumPtSlotRecognition` und Member-Hinweis im Profil |
 | FZ-062 | PT-Buchung als freien Premium-Slot markieren | 4 | done | docs/spec.md BR7 | Implementiert: Direkte PT-Buchung setzt `isFreePremiumSlot` automatisch anhand der Premium-Prüfung |
 | FZ-063 | Kostenpflichtige PT-Slots mit Trainer-Stundensatz buchen | 4 | done | docs/spec.md BR7 | Implementiert: Bei PT-Direktbuchung wird fuer nicht freie Premium-Slots ein `CustomerAccountEntry` vom Typ `PERSONAL_TRAINING_CHARGE` mit Betrag aus `Trainer.hourly_pt_rate` (in Cents) angelegt; getestet in `src/app/api/personal-training/route.test.ts` |
-| FZ-064 | PT-Billing-Status `PENDING` setzen | 4 | validated | docs/spec.md BR7 | Offener Posten fuer Monatsende |
+| FZ-064 | PT-Billing-Status `PENDING` setzen | 4 | done | docs/spec.md BR7 | Implementiert: PT-Direktbuchung setzt `billingStatus` fachlich abgeleitet auf `PENDING` fuer kostenpflichtige Slots bzw. `PAID` fuer freie Premium-Slots; API-Tests in `src/app/api/personal-training/route.test.ts` erweitert |
 | FZ-065 | Admin-Dashboard fuer offene PT-Posten | 4 | validated | docs/spec.md §1, BR7 | Lisa ueberwacht Bezahlstatus |
 | FZ-066 | Monatsabschluss-Liste fuer SEPA-Einzug | 4 | validated | docs/spec.md BR7 | Offene Posten export-/sichtbar machen |
 | FZ-067 | PT-Posten nach Export auf `BILLED_TO_ACCOUNT` setzen | 4 | validated | docs/spec.md BR7 | Nach SEPA-Vorbereitung |

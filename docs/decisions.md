@@ -2,6 +2,30 @@
 
 _Chronologisches Log aller Architektur- und Produktentscheidungen._
 
+## 2026-07-13 - FZ-064 PT-Billing-Status bei Direktbuchung fachlich ableiten
+
+**Kontext:** Nach FZ-063 wurde bei kostenpflichtigen PT-Buchungen bereits ein `CustomerAccountEntry` mit `billingStatus = PENDING` angelegt. Der zugehoerige `PersonalTrainingBooking`-Datensatz selbst erhielt im Direktbuchungspfad jedoch noch keinen fachlich abgeleiteten Billing-Status und blieb dadurch fuer freie Premium-Slots uneindeutig.
+
+### Entscheidung
+
+FZ-064 wird direkt im bestehenden PT-Buchungspfad umgesetzt:
+- `PUT /api/personal-training/[id]` setzt beim atomaren `AVAILABLE` -> `BOOKED`-Uebergang jetzt auch `PersonalTrainingBooking.billingStatus`.
+- Kostenpflichtige PT-Slots erhalten `billingStatus = PENDING`, damit sie als offener Posten fuer Monatsende sichtbar sind.
+- Freie Premium-Slots erhalten `billingStatus = PAID`, damit sie nicht faelschlich als offene Forderung erscheinen.
+- Die bestehenden API-Tests in `src/app/api/personal-training/route.test.ts` pruefen nun die persistierten `billingStatus`-Werte fuer beide Faelle.
+
+### Alternativen verworfen
+
+- Billing-Status nur auf dem Kontoposten pflegen: waere fuer spaetere Slot-basierte Admin-Auswertungen zu inkonsistent.
+- Freie Premium-Slots ebenfalls auf `PENDING` lassen: wuerde BR7 verletzen, weil kostenlose Slots als offener Posten erscheinen koennten.
+- Neue Enum-Auspraegung fuer "nicht abrechnungsrelevant": aktuell unnoetig gross fuer den vorhandenen Scope.
+
+### Konsequenzen
+
+- Slot-Ebene und Ledger-Ebene sind fuer PT-Buchungen jetzt konsistent.
+- Folgefeatures wie FZ-065 bis FZ-067 koennen offene PT-Posten ohne Sonderfall fuer freie Premium-Slots auswerten.
+- Es waren keine Schemaaenderungen oder Migrationen notwendig.
+
 ## 2026-07-13 - FZ-063 Kostenpflichtige PT-Slots mit Trainer-Stundensatz auf Kundenkonto buchen
 
 **Kontext:** Laut `docs/spec.md` BR7 sollen alle PT-Slots, die nicht als monatlicher Premium-Inklusivslot gelten, den Betrag des Trainer-Stundensatzes auf das Kundenkonto buchen. Nach FZ-062 wurde bereits serverseitig gespeichert, ob ein Slot frei ist (`isFreePremiumSlot`), aber der zugehoerige kostenpflichtige Kontoposten fehlte noch.

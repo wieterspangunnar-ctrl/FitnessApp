@@ -30,6 +30,8 @@ type PremiumPtSlotRecognition = {
   alreadyUsedIncludedSlotsThisMonth: number;
 };
 
+type BillingStatus = "PENDING" | "BILLED_TO_ACCOUNT" | "PAID";
+
 function toAmountCentsFromHourlyRate(hourlyPtRate: unknown) {
   const numericRate = Number(hourlyPtRate);
 
@@ -200,6 +202,7 @@ export async function PUT(request: Request, context: RouteContext) {
     const bookingMemberId = body.memberId;
     const shouldCreatePaidPtCharge =
       premiumPtSlotRecognition?.qualifiesForFreePremiumSlot === false;
+    const nextBillingStatus: BillingStatus = shouldCreatePaidPtCharge ? "PENDING" : "PAID";
     const paidPtChargeAmountCents = shouldCreatePaidPtCharge
       ? toAmountCentsFromHourlyRate(slot.trainer.hourlyPtRate)
       : null;
@@ -222,7 +225,8 @@ export async function PUT(request: Request, context: RouteContext) {
           ...updateData,
           memberId: body.memberId,
           status: (body.status as PersonalTrainingStatus | undefined) ?? "BOOKED",
-          isFreePremiumSlot: premiumPtSlotRecognition?.qualifiesForFreePremiumSlot ?? false
+          isFreePremiumSlot: premiumPtSlotRecognition?.qualifiesForFreePremiumSlot ?? false,
+          billingStatus: nextBillingStatus
         }
       });
 
