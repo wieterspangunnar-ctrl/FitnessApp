@@ -11,6 +11,34 @@ type BillingStatus = (typeof BILLING_STATUSES)[number];
 type Trainer = { id: string; firstName: string; lastName: string; hourlyPtRate: string };
 type MemberOption = { id: string; firstName: string; lastName: string };
 
+type OpenPtChargeItem = {
+  id: string;
+  amountCents: number;
+  createdAt: string;
+  member: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  personalTrainingBooking: {
+    id: string;
+    startTime: string;
+    endTime: string;
+    trainer: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    };
+  } | null;
+};
+
+type MonthClosingData = {
+  items: OpenPtChargeItem[];
+  totalOpenItems: number;
+  totalOpenAmountCents: number;
+};
+
 type PtSlot = {
   id: string;
   startTime: string;
@@ -63,6 +91,11 @@ export default function PersonalTrainingPage() {
   const [form, setForm] = useState<SlotForm>(emptyForm);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [monthClosingData, setMonthClosingData] = useState<MonthClosingData>({
+    items: [],
+    totalOpenItems: 0,
+    totalOpenAmountCents: 0
+  });
   const [statusDrafts, setStatusDrafts] = useState<Record<string, PtStatus>>({});
   const [billingDrafts, setBillingDrafts] = useState<Record<string, BillingStatus>>({});
 
@@ -72,15 +105,18 @@ export default function PersonalTrainingPage() {
       fetch("/api/trainers"),
       fetch("/api/members")
     ]);
+    const monthClosingRes = await fetch("/api/personal-training/month-closing");
 
     const slotsData = await slotsRes.json();
     const trainersData = await trainersRes.json();
     const membersData = await membersRes.json();
+    const monthClosingResponse = await monthClosingRes.json();
 
     const nextSlots = (slotsData.slots ?? []) as PtSlot[];
     setSlots(nextSlots);
     setTrainers((trainersData.trainers ?? []) as Trainer[]);
     setMembers((membersData.members ?? []) as MemberOption[]);
+    setMonthClosingData(monthClosingResponse as MonthClosingData);
 
     setStatusDrafts(
       nextSlots.reduce<Record<string, PtStatus>>((acc, s) => { acc[s.id] = s.status; return acc; }, {})
@@ -326,6 +362,53 @@ export default function PersonalTrainingPage() {
           </table>
         </div>
       )}
+
+      <section style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, padding: 20, marginTop: 32 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 13, textTransform: "uppercase", letterSpacing: 0.08, color: "#9a3412", fontWeight: 700 }}>Monatsabschluss</p>
+            <h2 style={{ fontSize: 18, fontWeight: 600, margin: "4px 0 0" }}>SEPA-Einzug vorbereiten</h2>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <p style={{ margin: 0, color: "#9a3412" }}>{monthClosingData.totalOpenItems} offene Posten</p>
+            <strong style={{ fontSize: 18 }}>{Number(monthClosingData.totalOpenAmountCents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</strong>
+          </div>
+        </div>
+
+        {monthClosingData.totalOpenItems === 0 ? (
+          <p style={{ margin: 0, color: "#9a3412" }}>Keine offenen PT-Posten für den Monatsabschluss vorhanden.</p>
+        ) : (
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 12 }}>
+            {monthClosingData.items.map((entry) => (
+              <li key={entry.id} style={{ background: "#fff", border: "1px solid #fed7aa", borderRadius: 6, padding: 16, display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                <div>
+                  <strong>
+                    {entry.member.firstName} {entry.member.lastName}
+                  </strong>
+                  <p style={{ margin: "4px 0 0", color: "#6b7280" }}>{entry.member.email}</p>
+                  {entry.personalTrainingBooking ? (
+                    <p style={{ margin: "4px 0 0" }}>
+                      Slot: {formatDateTime(entry.personalTrainingBooking.startTime)} bis {formatDateTime(entry.personalTrainingBooking.endTime)} bei {entry.personalTrainingBooking.trainer.firstName} {entry.personalTrainingBooking.trainer.lastName}
+                    </p>
+                  ) : (
+                    <p style={{ margin: "4px 0 0" }}>Kein verknuepfter PT-Termin vorhanden</p>
+                  )}
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <strong>{Number(entry.amountCents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</strong>
+                  <p style={{ margin: "4px 0 0", color: "#6b7280" }}>
+                    Erfasst: {formatDateTime(entry.createdAt)}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <p style={{ margin: "16px 0 0", color: "#9a3412", fontSize: 13 }}>
+          Diese Liste ist die Grundlage fuer den spaeteren Statuswechsel auf BILLED_TO_ACCOUNT nach dem SEPA-Export.
+        </p>
+      </section>
     </main>
   );
 }

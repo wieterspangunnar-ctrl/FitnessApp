@@ -107,7 +107,7 @@ _Stabile Feature-IDs. Nicht umnummerieren. Killed-IDs bleiben killed._
 | FZ-063 | Kostenpflichtige PT-Slots mit Trainer-Stundensatz buchen | 4 | done | docs/spec.md BR7 | Implementiert: Bei PT-Direktbuchung wird fuer nicht freie Premium-Slots ein `CustomerAccountEntry` vom Typ `PERSONAL_TRAINING_CHARGE` mit Betrag aus `Trainer.hourly_pt_rate` (in Cents) angelegt; getestet in `src/app/api/personal-training/route.test.ts` |
 | FZ-064 | PT-Billing-Status `PENDING` setzen | 4 | done | docs/spec.md BR7 | Implementiert: PT-Direktbuchung setzt `billingStatus` fachlich abgeleitet auf `PENDING` fuer kostenpflichtige Slots bzw. `PAID` fuer freie Premium-Slots; API-Tests in `src/app/api/personal-training/route.test.ts` erweitert |
 | FZ-065 | Admin-Dashboard fuer offene PT-Posten | 4 | done | docs/spec.md §1, BR7 | Implementiert: Startseite zeigt offenen PT-Posten-Block mit Anzahl, Gesamtsumme und Detailliste aller `PENDING`-PT-Posten inkl. Mitglied, Slot und Trainer; Link zur PT-Verwaltung vorhanden |
-| FZ-066 | Monatsabschluss-Liste fuer SEPA-Einzug | 4 | validated | docs/spec.md BR7 | Offene Posten export-/sichtbar machen |
+| FZ-066 | Monatsabschluss-Liste fuer SEPA-Einzug | 4 | done | docs/spec.md BR7 | Implementiert: eigene PT-Ansicht mit `GET /api/personal-training/month-closing` und sichtbarer Liste der offenen PENDING-Posten fuer den SEPA-Monatsabschluss |
 | FZ-067 | PT-Posten nach Export auf `BILLED_TO_ACCOUNT` setzen | 4 | validated | docs/spec.md BR7 | Nach SEPA-Vorbereitung |
 
 ### Phase 5 - Online-Videos & Zugriff

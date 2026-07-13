@@ -26,6 +26,30 @@ FZ-065 wird als Dashboard-Auswertung auf Basis des bestehenden Ledgers umgesetzt
 - FZ-066 (Monatsabschlussliste) kann auf derselben Ledger-Auswertung aufbauen.
 - Keine Schemaaenderungen oder Migrationen notwendig.
 
+## 2026-07-13 - FZ-066 Monatsabschluss-Liste fuer SEPA-Einzug als eigene PT-Ansicht
+
+**Kontext:** Nach FZ-065 waren die offenen PT-Posten zwar bereits im Admin-Dashboard sichtbar, aber Lisa brauchte fuer den Monatsabschluss im PT-Bereich eine explizite Liste mit denselben abrechnungsrelevanten Ledgerdaten, die den SEPA-Einzug vorbereitet.
+
+### Entscheidung
+
+FZ-066 wird als sichtbare Monatsabschluss-Ansicht im bestehenden PT-Bereich umgesetzt:
+- Ein neuer serverseitiger Endpunkt `GET /api/personal-training/month-closing` liefert dieselbe offene-Posten-Auswertung wie das Dashboard auf Basis von `CustomerAccountEntry` mit `type = PERSONAL_TRAINING_CHARGE` und `billingStatus = PENDING`.
+- Die PT-Verwaltungsseite `src/app/personal-training/page.tsx` zeigt nun einen eigenen Abschnitt "SEPA-Einzug vorbereiten" mit Anzahl, Gesamtsumme und Detailliste der offenen Posten.
+- Die Ansicht bleibt bewusst lesend; der eigentliche Statuswechsel auf `BILLED_TO_ACCOUNT` bleibt FZ-067 vorbehalten.
+- Keine Schemaaenderungen oder Migrationen sind noetig, da die bestehende Ledger-Struktur aus FZ-063/FZ-064 wiederverwendet wird.
+
+### Alternativen verworfen
+
+- Monatsabschluss nur im Home-Dashboard lassen: waere fuer den Arbeitsablauf in der PT-Verwaltung zu verstreut geblieben.
+- Export- oder Statusschalter direkt in FZ-066 einbauen: wuerde FZ-067 vorziehen und die Trennung zwischen Sichtbarkeit und Abwicklung verwischen.
+- Neue aggregierte Tabelle oder separate Persistenz fuer Monatsabschluesse: unnötig, weil die bestehende Ledger-Auswertung bereits die fachlich richtige Quelle ist.
+
+### Konsequenzen
+
+- Lisa hat im PT-Bereich jetzt eine explizite Monatsabschluss-Sicht fuer den SEPA-Einzug.
+- FZ-067 kann direkt auf der gleichen Ledger-Auswertung aufsetzen und nur den Statuswechsel nachziehen.
+- Es bleiben weiterhin keine Schemaaenderungen oder Migrationen erforderlich.
+
 ## 2026-07-13 - FZ-064 PT-Billing-Status bei Direktbuchung fachlich ableiten
 
 **Kontext:** Nach FZ-063 wurde bei kostenpflichtigen PT-Buchungen bereits ein `CustomerAccountEntry` mit `billingStatus = PENDING` angelegt. Der zugehoerige `PersonalTrainingBooking`-Datensatz selbst erhielt im Direktbuchungspfad jedoch noch keinen fachlich abgeleiteten Billing-Status und blieb dadurch fuer freie Premium-Slots uneindeutig.
